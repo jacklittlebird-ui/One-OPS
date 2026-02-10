@@ -18,7 +18,15 @@ const navSections: NavSection[] = [
   { label: "Dashboard", icon: <LayoutDashboard size={18} />, path: "/", active: false },
   {
     label: "OPERATION", icon: <Plane size={18} />, collapsible: true,
-    children: [{ label: "Flights", path: "#" }],
+    children: [
+      { label: "Airlines", path: "#" },
+      { label: "Aircrafts", path: "#" },
+      { label: "Flight Schedule", path: "#" },
+      { label: "Overfly Schedule", path: "#" },
+      { label: "Delay Codes", path: "#" },
+      { label: "Lost & Found", path: "#" },
+      { label: "Staff Roster", path: "#" },
+    ],
   },
   {
     label: "ACCOUNTANT", icon: <Calculator size={18} />, collapsible: true,
