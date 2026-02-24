@@ -1,6 +1,14 @@
 import { useState } from "react";
-import { Link2, DollarSign, Plane, UtensilsCrossed, Fuel, BedDouble, Shield, Crown, Map, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link2, DollarSign, Plane, UtensilsCrossed, Fuel, BedDouble, Shield, Crown, Map, ChevronLeft, ChevronRight, Building2, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  civilAviationData, civilAviationServices,
+  handlingTypes, handlingEquipmentIncluded, handlingEquipmentPerHour,
+  handlingEquipmentOnRequest, handlingEquipmentPerHourRequest, crewHandlingItems,
+  cateringItems, fuelItems,
+  hotacPassengers, hotacCrew, hotacVip, hotacTransport,
+  securityItems, vipItems, overflyItems, caiSuppliers,
+} from "@/data/servicesData";
 
 type ServiceTab =
   | "Civil Aviation"
@@ -10,7 +18,8 @@ type ServiceTab =
   | "Hotac"
   | "Security"
   | "VIP Services"
-  | "Overflying & Permits";
+  | "Overflying & Permits"
+  | "CAI Suppliers";
 
 const tabs: { key: ServiceTab; icon: React.ReactNode; color: string }[] = [
   { key: "Civil Aviation",       icon: <Plane size={15} />,            color: "hsl(var(--primary))" },
@@ -21,152 +30,40 @@ const tabs: { key: ServiceTab; icon: React.ReactNode; color: string }[] = [
   { key: "Security",             icon: <Shield size={15} />,           color: "hsl(var(--success))" },
   { key: "VIP Services",         icon: <Crown size={15} />,            color: "hsl(208 60% 55%)" },
   { key: "Overflying & Permits", icon: <Map size={15} />,              color: "hsl(var(--muted-foreground))" },
+  { key: "CAI Suppliers",        icon: <Building2 size={15} />,        color: "hsl(var(--primary))" },
 ];
 
-// --- Civil Aviation data — Egyptian Airports (المصرية للمطارات) real pricing from Master Data Sheet ---
-// Rate tiers: ton 1-18: 1.817/ton/day, 2.18/ton/night; ton 19-25: incremental +1.82/+2.27 per ton;
-// ton 26-100: incremental +2.783/+3.479 per ton; ton 101+: incremental +3.761/+4.640 per ton
-function calcEgyptianAirports(ton: number) {
-  let dayFee: number, nightFee: number;
-  if (ton <= 18) {
-    dayFee = 1.817 * ton;
-    nightFee = 2.18 * ton;
-  } else if (ton <= 25) {
-    dayFee = 1.817 * 18 + (ton - 18) * 1.82;
-    nightFee = 2.18 * 18 + (ton - 18) * 2.27;
-  } else if (ton <= 100) {
-    dayFee = 1.817 * 18 + 7 * 1.82 + (ton - 25) * 2.783;
-    nightFee = 2.18 * 18 + 7 * 2.27 + (ton - 25) * 3.479;
-  } else {
-    dayFee = 1.817 * 18 + 7 * 1.82 + 75 * 2.783 + (ton - 100) * 3.761;
-    nightFee = 2.18 * 18 + 7 * 2.27 + 75 * 3.479 + (ton - 100) * 4.640;
-  }
-  return { dayFee: +dayFee.toFixed(3), nightFee: +nightFee.toFixed(3) };
-}
-
-const civilAviationData = Array.from({ length: 200 }, (_, i) => {
-  const ton = i + 1;
-  const { dayFee, nightFee } = calcEgyptianAirports(ton);
-  return { id: String(ton), ton, dayFee, nightFee, currency: "USD", airports: "HRG, SSH, LXR, ASW" };
-});
-
-// --- Handling services structure ---
-const handlingTypes = [
-  { type: "Turnaround", subTypes: ["Full Handling", "Ramp Handling"] },
-  { type: "Transit", subTypes: ["Full Handling", "Ramp Handling"] },
-  { type: "Night Stop", subTypes: ["Full Handling", "Ramp Handling"] },
-  { type: "Ferry In / Out", subTypes: ["Basic Handling"] },
-  { type: "Technical", subTypes: ["Ramp Handling"] },
-  { type: "Cargo Handling", subTypes: ["Basic Handling"] },
-  { type: "Ground Services", subTypes: ["Per Request"] },
-];
-
-const handlingEquipment = [
-  { name: "Chocks", unit: "Per Unit", included: true },
-  { name: "Marshaling", unit: "Per Unit", included: true },
-  { name: "Water Services", unit: "Per Unit", included: true },
-  { name: "Toilet Services", unit: "Per Unit", included: true },
-  { name: "Internal Cabin Cleaning", unit: "Per Unit", included: true },
-  { name: "Passenger Steps", unit: "Per Hour", included: true },
-  { name: "Tractor", unit: "Per Hour", included: true },
-  { name: "Baggage Cart", unit: "Per Hour", included: true },
-  { name: "Belt Conveyor", unit: "Per Hour", included: true },
-  { name: "Ground Power Unit (GPU)", unit: "Per Hour", included: false },
-  { name: "Air Condition Unit (ACU)", unit: "Per Hour", included: false },
-  { name: "Push Back", unit: "Per Unit", included: false },
-  { name: "Towing Tractor", unit: "Per Unit", included: false },
-  { name: "Passenger Bus (70 Pax)", unit: "Per Unit", included: false },
-  { name: "VIP Microbus", unit: "Per Unit", included: false },
-  { name: "Crew Microbus", unit: "Per Unit", included: false },
-  { name: "Air Starter Unit (ASU)", unit: "Per Unit", included: false },
-  { name: "Security Services", unit: "Per Unit", included: false },
-  { name: "Baggage Identification", unit: "Per Unit", included: false },
-  { name: "Wheelchair", unit: "Per Unit", included: false },
-  { name: "Catering Highlift", unit: "Per Unit", included: false },
-  { name: "Dispatching / Engine Start-up", unit: "Per Unit", included: false },
-  { name: "Fork Lift (up to 20 ton)", unit: "Per Hour", included: false },
-  { name: "Link Supervision", unit: "Per Hour", included: false },
-];
-
-// --- Catering ---
-const cateringItems = [
-  { item: "Standard Meal (Economy)", unit: "Per Pax", price: "TBD", notes: "Hot/Cold" },
-  { item: "Business Class Meal", unit: "Per Pax", price: "TBD", notes: "Premium" },
-  { item: "First Class Meal", unit: "Per Pax", price: "TBD", notes: "Luxury" },
-  { item: "Special Meal (Halal/Kosher/Vegan)", unit: "Per Pax", price: "TBD", notes: "On Request" },
-  { item: "Crew Meal", unit: "Per Crew", price: "TBD", notes: "" },
-  { item: "Water (1.5L bottles)", unit: "Per Case (12)", price: "TBD", notes: "" },
-  { item: "Soft Drinks", unit: "Per Case", price: "TBD", notes: "" },
-  { item: "Galley Change (Belly to Cabin)", unit: "Per Flight", price: "TBD", notes: "" },
-];
-
-// --- Fuel ---
-const fuelItems = [
-  { grade: "JET A-1", unit: "Per Liter", price: "TBD", currency: "USD", notes: "Subject to market rates" },
-  { grade: "JET A-1 (Into-plane)", unit: "Per Liter", price: "TBD", currency: "USD", notes: "Includes dispensing fee" },
-  { grade: "AVGAS 100LL", unit: "Per Liter", price: "TBD", currency: "USD", notes: "GA only" },
-];
-
-// --- Hotac ---
-const hotacItems = [
-  { category: "Crew Hotel (3★)", unit: "Per Night/Room", price: "TBD", currency: "USD" },
-  { category: "Crew Hotel (4★)", unit: "Per Night/Room", price: "TBD", currency: "USD" },
-  { category: "Crew Hotel (5★)", unit: "Per Night/Room", price: "TBD", currency: "USD" },
-  { category: "Crew Transport (Hotel ↔ Airport)", unit: "Per Trip", price: "TBD", currency: "USD" },
-  { category: "Crew Per Diem", unit: "Per Day/Person", price: "TBD", currency: "USD" },
-];
-
-// --- Security ---
-const securityItems = [
-  { service: "Arrival Security Check", unit: "Per Flight", price: "TBD" },
-  { service: "Departure Security Check", unit: "Per Flight", price: "TBD" },
-  { service: "Turn Around Security", unit: "Per Flight", price: "TBD" },
-  { service: "Ad-Hoc Security", unit: "Per Hour", price: "TBD" },
-  { service: "Maintenance Security", unit: "Per Hour", price: "TBD" },
-  { service: "Baggage Screening", unit: "Per Bag", price: "TBD" },
-  { service: "Cargo Screening", unit: "Per KG", price: "TBD" },
-];
-
-// --- VIP ---
-const vipItems = [
-  { service: "VIP Hall (Arrival)", unit: "Per Pax", price: "TBD" },
-  { service: "VIP Hall (Departure)", unit: "Per Pax", price: "TBD" },
-  { service: "VVIP Suite", unit: "Per Flight", price: "TBD" },
-  { service: "VIP Escort / Meet & Assist", unit: "Per Pax", price: "TBD" },
-  { service: "VIP Microbus", unit: "Per Trip", price: "TBD" },
-  { service: "Private Lounge", unit: "Per Hour", price: "TBD" },
-];
-
-// --- Overflying ---
-const overflyItems = [
-  { permit: "Overfly Permit (Single)", unit: "Per Permit", price: "TBD", validity: "Single Use" },
-  { permit: "Overfly Permit (Multiple – Monthly)", unit: "Per Month", price: "TBD", validity: "30 Days" },
-  { permit: "Landing Permit (Commercial)", unit: "Per Landing", price: "TBD", validity: "Single Use" },
-  { permit: "Landing Permit (Private/Charter)", unit: "Per Landing", price: "TBD", validity: "Single Use" },
-  { permit: "Special Permit (Military/State)", unit: "Per Flight", price: "TBD", validity: "As Approved" },
-  { permit: "Traffic Rights (T2)", unit: "Per Season", price: "TBD", validity: "IATA Season" },
-];
-
+// ---- Civil Aviation Tab ----
 const CA_PAGE_SIZE = 25;
 function CivilAviationTab() {
   const [caPage, setCaPage] = useState(1);
   const totalCaPages = Math.max(1, Math.ceil(civilAviationData.length / CA_PAGE_SIZE));
   const pageData = civilAviationData.slice((caPage - 1) * CA_PAGE_SIZE, caPage * CA_PAGE_SIZE);
+  const [showServices, setShowServices] = useState(false);
+
+  const grouped = civilAviationServices.reduce((acc, s) => {
+    (acc[s.category] = acc[s.category] || []).push(s);
+    return acc;
+  }, {} as Record<string, typeof civilAviationServices>);
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
+    <div className="space-y-6">
+      <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
           <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-primary">المصرية للمطارات (Egyptian Airports)</span> – Civil Aviation / Landing Fees
+            <span className="font-semibold text-primary">المصرية للمطارات (Egyptian Airports)</span> – Landing Fees
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Source: <span className="font-semibold">master_data_sheet_Odoo · Link Egypt Chart of Services Cost.xlsx → Civil Aviation</span>
-          </p>
-          <p className="text-xs text-muted-foreground">Airports: HRG, SSH, LXR, ASW · Currency: USD</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Airports: HRG, SSH, LXR, ASW · Currency: USD</p>
         </div>
-        <div className="text-xs text-muted-foreground">{civilAviationData.length} TON records</div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowServices(v => !v)} className="text-xs px-3 py-1.5 rounded-md border font-semibold hover:bg-muted transition-colors text-primary border-primary/30">
+            {showServices ? "Hide" : "Show"} Additional Services
+          </button>
+          <span className="text-xs text-muted-foreground">{civilAviationData.length} TON records</span>
+        </div>
       </div>
+
+      {/* TON rate table */}
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
           <thead>
@@ -195,23 +92,59 @@ function CivilAviationTab() {
           </tbody>
         </table>
       </div>
-      <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-        <span>Showing {(caPage - 1) * CA_PAGE_SIZE + 1}–{Math.min(caPage * CA_PAGE_SIZE, civilAviationData.length)} of {civilAviationData.length} records</span>
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span>Showing {(caPage - 1) * CA_PAGE_SIZE + 1}–{Math.min(caPage * CA_PAGE_SIZE, civilAviationData.length)} of {civilAviationData.length}</span>
         <div className="flex items-center gap-2">
           <button disabled={caPage <= 1} onClick={() => setCaPage(p => p - 1)} className="p-1.5 rounded border hover:bg-muted disabled:opacity-40"><ChevronLeft size={14} /></button>
-          <span className="text-foreground font-medium">Page {caPage} of {totalCaPages}</span>
+          <span className="text-foreground font-medium">Page {caPage}/{totalCaPages}</span>
           <button disabled={caPage >= totalCaPages} onClick={() => setCaPage(p => p + 1)} className="p-1.5 rounded border hover:bg-muted disabled:opacity-40"><ChevronRight size={14} /></button>
         </div>
       </div>
+
+      {/* Additional Civil Aviation Services */}
+      {showServices && (
+        <div className="space-y-4 pt-2">
+          <h3 className="font-bold text-foreground">Additional Civil Aviation Services & Fees</h3>
+          {Object.entries(grouped).map(([cat, items]) => (
+            <div key={cat}>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{cat}</h4>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full text-sm">
+                  <thead><tr>
+                    <th className="data-table-header px-4 py-2.5 text-left">Service</th>
+                    <th className="data-table-header px-4 py-2.5 text-left">Billing</th>
+                  </tr></thead>
+                  <tbody>
+                    {items.map(s => (
+                      <tr key={s.service} className="data-table-row">
+                        <td className="px-4 py-2 text-foreground">{s.service}</td>
+                        <td className="px-4 py-2 text-muted-foreground text-xs">{s.billing}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
+// ---- Handling Services Tab ----
 function HandlingServicesTab() {
+  const equipmentSections = [
+    { title: "Included in Basic Handling", data: handlingEquipmentIncluded, badge: "✓ Included", badgeClass: "bg-success/15 text-success" },
+    { title: "Per Hour (included in basic, time-free)", data: handlingEquipmentPerHour, badge: "Per Hour", badgeClass: "bg-info/15 text-info" },
+    { title: "Per Unit (on request)", data: handlingEquipmentOnRequest, badge: "On Request", badgeClass: "bg-muted text-muted-foreground" },
+    { title: "Per Hour (on request)", data: handlingEquipmentPerHourRequest, badge: "On Request", badgeClass: "bg-muted text-muted-foreground" },
+  ];
+
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">Linked from: <span className="font-semibold text-primary">Link Egypt Chart of Services Cost.xlsx → Handling Services</span></p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Handling types */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {handlingTypes.map(h => (
           <div key={h.type} className="bg-card border rounded-lg p-4">
             <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
@@ -225,28 +158,48 @@ function HandlingServicesTab() {
           </div>
         ))}
       </div>
+
+      {/* Equipment sections */}
+      {equipmentSections.map(section => (
+        <div key={section.title}>
+          <h3 className="font-bold text-foreground mb-3">{section.title}</h3>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead><tr>
+                <th className="data-table-header px-4 py-3 text-left">Service / Equipment</th>
+                <th className="data-table-header px-4 py-3 text-left">Billing Unit</th>
+                <th className="data-table-header px-4 py-3 text-left">Status</th>
+              </tr></thead>
+              <tbody>
+                {section.data.map(e => (
+                  <tr key={e.name} className="data-table-row">
+                    <td className="px-4 py-2.5 text-foreground">{e.name}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground text-xs">{e.unit}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${section.badgeClass}`}>{section.badge}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+
+      {/* Crew Handling */}
       <div>
-        <h3 className="font-bold text-foreground mb-3">Ground Equipment & Services</h3>
+        <h3 className="font-bold text-foreground mb-3 flex items-center gap-2"><Users size={14} className="text-primary" /> Crew Handling</h3>
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {["SERVICE / EQUIPMENT", "BILLING UNIT", "INCLUDED IN BASIC"].map(h => (
-                  <th key={h} className="data-table-header px-4 py-3 text-left whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
+            <thead><tr>
+              <th className="data-table-header px-4 py-3 text-left">Service</th>
+              <th className="data-table-header px-4 py-3 text-left">Billing Unit</th>
+            </tr></thead>
             <tbody>
-              {handlingEquipment.map(e => (
-                <tr key={e.name} className="data-table-row">
-                  <td className="px-4 py-2.5 text-foreground">{e.name}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground text-xs">{e.unit}</td>
-                  <td className="px-4 py-2.5">
-                    {e.included
-                      ? <span className="px-2 py-0.5 rounded-full text-xs bg-success/15 text-success font-medium">✓ Included</span>
-                      : <span className="px-2 py-0.5 rounded-full text-xs bg-muted text-muted-foreground font-medium">On Request</span>
-                    }
-                  </td>
+              {crewHandlingItems.map(c => (
+                <tr key={c.service} className="data-table-row">
+                  <td className="px-4 py-2.5 text-foreground">{c.service}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground text-xs">{c.unit}</td>
                 </tr>
               ))}
             </tbody>
@@ -257,21 +210,62 @@ function HandlingServicesTab() {
   );
 }
 
-function SimpleServiceTab({ items, columns, sourceSheet }: { items: Record<string, any>[]; columns: string[]; sourceSheet: string }) {
+// ---- Catering Tab (grouped by category) ----
+function CateringTab() {
+  const grouped = cateringItems.reduce((acc, item) => {
+    (acc[item.category] = acc[item.category] || []).push(item);
+    return acc;
+  }, {} as Record<string, typeof cateringItems>);
+
   return (
+    <div className="space-y-5">
+      {Object.entries(grouped).map(([cat, items]) => (
+        <div key={cat}>
+          <h3 className="font-bold text-foreground mb-2">{cat}</h3>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead><tr>
+                <th className="data-table-header px-4 py-3 text-left">Item</th>
+                <th className="data-table-header px-4 py-3 text-left">Unit</th>
+                <th className="data-table-header px-4 py-3 text-left">Price</th>
+              </tr></thead>
+              <tbody>
+                {items.map(r => (
+                  <tr key={r.item} className="data-table-row">
+                    <td className="px-4 py-2.5 text-foreground">{r.item}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground text-xs">{r.unit}</td>
+                    <td className="px-4 py-2.5 text-foreground">{r.price}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---- Hotac Tab (Passengers / Crew / VIP / Transport) ----
+function HotacTab() {
+  const renderHotacTable = (title: string, data: { category: string; sgl: string; dbl: string; tpl: string; currency: string }[]) => (
     <div>
-      <p className="text-sm text-muted-foreground mb-4">Linked from: <span className="font-semibold text-primary">Link Egypt Chart of Services Cost.xlsx → {sourceSheet}</span></p>
+      <h3 className="font-bold text-foreground mb-2">{title}</h3>
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
-          <thead>
-            <tr>{columns.map(c => <th key={c} className="data-table-header px-4 py-3 text-left whitespace-nowrap">{c.toUpperCase()}</th>)}</tr>
-          </thead>
+          <thead><tr>
+            {["Category", "SGL", "DBL", "TPL", "Currency"].map(h => (
+              <th key={h} className="data-table-header px-4 py-3 text-left">{h}</th>
+            ))}
+          </tr></thead>
           <tbody>
-            {items.map((row, i) => (
-              <tr key={i} className="data-table-row">
-                {Object.values(row).map((v, j) => (
-                  <td key={j} className="px-4 py-2.5 text-foreground text-sm">{String(v)}</td>
-                ))}
+            {data.map(r => (
+              <tr key={r.category} className="data-table-row">
+                <td className="px-4 py-2.5 text-foreground">{r.category}</td>
+                <td className="px-4 py-2.5 text-foreground">{r.sgl}</td>
+                <td className="px-4 py-2.5 text-foreground">{r.dbl}</td>
+                <td className="px-4 py-2.5 text-foreground">{r.tpl}</td>
+                <td className="px-4 py-2.5 text-muted-foreground text-xs">{r.currency}</td>
               </tr>
             ))}
           </tbody>
@@ -279,8 +273,122 @@ function SimpleServiceTab({ items, columns, sourceSheet }: { items: Record<strin
       </div>
     </div>
   );
+
+  return (
+    <div className="space-y-6">
+      {renderHotacTable("Passengers HOTAC", hotacPassengers)}
+      {renderHotacTable("Crew HOTAC", hotacCrew)}
+      {renderHotacTable("VIP HOTAC", hotacVip)}
+      <div>
+        <h3 className="font-bold text-foreground mb-2">Transportation</h3>
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <thead><tr>
+              {["Service", "Unit", "Price", "Currency"].map(h => (
+                <th key={h} className="data-table-header px-4 py-3 text-left">{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {hotacTransport.map(r => (
+                <tr key={r.service} className="data-table-row">
+                  <td className="px-4 py-2.5 text-foreground">{r.service}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground text-xs">{r.unit}</td>
+                  <td className="px-4 py-2.5 text-foreground">{r.price}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground text-xs">{r.currency}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
 
+// ---- VIP Tab (grouped by category) ----
+function VipTab() {
+  const grouped = vipItems.reduce((acc, item) => {
+    (acc[item.category] = acc[item.category] || []).push(item);
+    return acc;
+  }, {} as Record<string, typeof vipItems>);
+
+  return (
+    <div className="space-y-5">
+      {Object.entries(grouped).map(([cat, items]) => (
+        <div key={cat}>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{cat}</h4>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead><tr>
+                <th className="data-table-header px-4 py-3 text-left">Service</th>
+                <th className="data-table-header px-4 py-3 text-left">Unit</th>
+                <th className="data-table-header px-4 py-3 text-left">Price</th>
+              </tr></thead>
+              <tbody>
+                {items.map(r => (
+                  <tr key={r.service} className="data-table-row">
+                    <td className="px-4 py-2.5 text-foreground">{r.service}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground text-xs">{r.unit}</td>
+                    <td className="px-4 py-2.5 text-foreground">{r.price}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---- Simple table for Security, Fuel, Overfly ----
+function SimpleServiceTab({ items, columns }: { items: Record<string, any>[]; columns: string[] }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr>{columns.map(c => <th key={c} className="data-table-header px-4 py-3 text-left whitespace-nowrap">{c.toUpperCase()}</th>)}</tr>
+        </thead>
+        <tbody>
+          {items.map((row, i) => (
+            <tr key={i} className="data-table-row">
+              {Object.values(row).map((v, j) => (
+                <td key={j} className="px-4 py-2.5 text-foreground text-sm">{String(v)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---- CAI Suppliers Tab ----
+function CaiSuppliersTab() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Building2 size={16} className="text-primary" />
+        <h3 className="font-bold text-foreground">Cairo International Airport (CAI) — Service Suppliers</h3>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">Mapped from <span className="font-semibold text-primary">CAI_1.pdf</span></p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {caiSuppliers.map(s => (
+          <div key={s.service} className="bg-card border rounded-lg p-4">
+            <h4 className="font-bold text-foreground mb-2 text-sm">{s.service}</h4>
+            <div className="flex flex-wrap gap-1.5">
+              {s.suppliers.map(sup => (
+                <span key={sup} className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">{sup}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============ Main Page ============
 export default function ServicesPage() {
   const [activeTab, setActiveTab] = useState<ServiceTab>("Civil Aviation");
   const navigate = useNavigate();
@@ -292,7 +400,7 @@ export default function ServicesPage() {
         <Link2 size={18} className="text-primary" />
       </div>
       <p className="text-muted-foreground text-sm mb-5">
-        Linked from <span className="font-semibold">Link Egypt Chart of Services Cost.xlsx</span> · Cross-referenced with{" "}
+        Cross-referenced with{" "}
         <button onClick={() => navigate("/flight-schedule")} className="text-primary font-semibold hover:underline">Flight Schedule</button> and{" "}
         <button onClick={() => navigate("/airport-charges")} className="text-primary font-semibold hover:underline">Airport Charges</button>
       </p>
@@ -304,9 +412,7 @@ export default function ServicesPage() {
             key={t.key}
             onClick={() => setActiveTab(t.key)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
-              activeTab === t.key
-                ? "bg-card shadow text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+              activeTab === t.key ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
             style={activeTab === t.key ? { color: t.color } : {}}
           >
@@ -320,48 +426,13 @@ export default function ServicesPage() {
       <div className="bg-card rounded-lg border p-5">
         {activeTab === "Civil Aviation" && <CivilAviationTab />}
         {activeTab === "Handling Services" && <HandlingServicesTab />}
-        {activeTab === "Catering" && (
-          <SimpleServiceTab
-            items={cateringItems}
-            columns={["item", "unit", "price", "notes"]}
-            sourceSheet="Catering"
-          />
-        )}
-        {activeTab === "Fuel" && (
-          <SimpleServiceTab
-            items={fuelItems}
-            columns={["grade", "unit", "price", "currency", "notes"]}
-            sourceSheet="Fuel"
-          />
-        )}
-        {activeTab === "Hotac" && (
-          <SimpleServiceTab
-            items={hotacItems}
-            columns={["category", "unit", "price", "currency"]}
-            sourceSheet="Hotac"
-          />
-        )}
-        {activeTab === "Security" && (
-          <SimpleServiceTab
-            items={securityItems}
-            columns={["service", "unit", "price"]}
-            sourceSheet="Security"
-          />
-        )}
-        {activeTab === "VIP Services" && (
-          <SimpleServiceTab
-            items={vipItems}
-            columns={["service", "unit", "price"]}
-            sourceSheet="VIP Services"
-          />
-        )}
-        {activeTab === "Overflying & Permits" && (
-          <SimpleServiceTab
-            items={overflyItems}
-            columns={["permit", "unit", "price", "validity"]}
-            sourceSheet="Overflying - permits"
-          />
-        )}
+        {activeTab === "Catering" && <CateringTab />}
+        {activeTab === "Fuel" && <SimpleServiceTab items={fuelItems} columns={["grade", "unit", "price", "currency", "notes"]} />}
+        {activeTab === "Hotac" && <HotacTab />}
+        {activeTab === "Security" && <SimpleServiceTab items={securityItems} columns={["service", "unit", "price"]} />}
+        {activeTab === "VIP Services" && <VipTab />}
+        {activeTab === "Overflying & Permits" && <SimpleServiceTab items={overflyItems} columns={["permit", "unit", "price", "validity"]} />}
+        {activeTab === "CAI Suppliers" && <CaiSuppliersTab />}
       </div>
     </div>
   );
