@@ -41,34 +41,35 @@ const navSections: NavSection[] = [
     label: "CONTRACT", icon: <FileText size={18} />, collapsible: true,
     children: [{ label: "Contracts", path: "/contracts" }],
   },
-  { label: "CATERING", icon: <Utensils size={18} />, path: "#" },
+  {
+    label: "CATERING", icon: <Utensils size={18} />, path: "/catering",
+  },
   {
     label: "PRICES", icon: <DollarSign size={18} />, collapsible: true,
     children: [
-      { label: "Tube", path: "#" },
+      { label: "Tube", path: "/tube" },
       { label: "Airport Charges", path: "/airport-charges" },
-      { label: "Airport Tax", path: "#" },
-      { label: "Basic Ramp", path: "#" },
-      { label: "Vendor Equipment", path: "#" },
-      { label: "Hall & VVIP", path: "#" },
+      { label: "Airport Tax", path: "/airport-tax" },
+      { label: "Basic Ramp", path: "/basic-ramp" },
+      { label: "Vendor Equipment", path: "/vendor-equipment" },
+      { label: "Hall & VVIP", path: "/hall-vvip" },
       { label: "Chart of Services", path: "/services" },
     ],
   },
   { label: "SERVICE REPORT", icon: <FileBarChart2 size={18} />, path: "/service-report" },
-  { label: "T2 (TRAFFIC RIGHTS)", icon: <Shield size={18} />, path: "#" },
+  { label: "T2 (TRAFFIC RIGHTS)", icon: <Shield size={18} />, path: "/traffic-rights" },
   {
     label: "QUALITY & SAFETY", icon: <AlertTriangle size={18} />, collapsible: true,
     children: [
-      { label: "Bulletins", path: "#" },
-      { label: "Bulletins Read", path: "#" },
-      { label: "Manuals & Forms", path: "#" },
+      { label: "Bulletins", path: "/bulletins" },
+      { label: "Manuals & Forms", path: "/manuals-forms" },
     ],
   },
   {
     label: "MISC.", icon: <MoreHorizontal size={18} />, collapsible: true,
     children: [
-      { label: "Abbreviations", path: "#" },
-      { label: "Aircraft Types", path: "#" },
+      { label: "Abbreviations", path: "/abbreviations" },
+      { label: "Aircraft Types", path: "/aircraft-types" },
     ],
   },
 ];
@@ -78,7 +79,7 @@ export default function Sidebar() {
   const currentPath = location.pathname;
 
   const isChildActive = (children: NavChild[]) =>
-    children.some(c => c.path !== "#" && currentPath === c.path);
+    children.some(c => currentPath === c.path);
 
   const defaultExpanded: Record<string, boolean> = {};
   navSections.forEach(s => {
@@ -92,7 +93,7 @@ export default function Sidebar() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(defaultExpanded);
   const toggle = (label: string) => setExpanded(prev => ({ ...prev, [label]: !prev[label] }));
 
-  const isActive = (path: string) => path !== "#" && currentPath === path;
+  const isActive = (path: string) => currentPath === path;
 
   return (
     <aside className="w-56 min-h-screen bg-sidebar flex flex-col shrink-0">
@@ -121,51 +122,33 @@ export default function Sidebar() {
                 {expanded[section.label] && section.children && (
                   <div className="ml-4 space-y-0.5">
                     {section.children.map((child) => (
-                      child.path === "#" ? (
-                        <span
-                          key={child.label}
-                          className="block px-3 py-1.5 rounded text-sm text-sidebar-muted cursor-default"
-                        >
-                          {child.label}
-                        </span>
-                      ) : (
-                        <Link
-                          key={child.label}
-                          to={child.path}
-                          className={`block px-3 py-1.5 rounded text-sm transition-colors ${
-                            isActive(child.path)
-                              ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent"
-                          }`}
-                        >
-                          {child.label}
-                        </Link>
-                      )
+                      <Link
+                        key={child.label}
+                        to={child.path}
+                        className={`block px-3 py-1.5 rounded text-sm transition-colors ${
+                          isActive(child.path)
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent"
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
                     ))}
                   </div>
                 )}
               </>
             ) : (
-              section.path === "#" ? (
-                <span
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sidebar-muted cursor-default"
-                >
-                  {section.icon}
-                  <span className="text-xs uppercase tracking-wider font-medium">{section.label}</span>
-                </span>
-              ) : (
-                <Link
-                  to={section.path || "/"}
-                  className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-                    isActive(section.path || "/")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  {section.icon}
-                  <span className="text-xs uppercase tracking-wider font-medium">{section.label}</span>
-                </Link>
-              )
+              <Link
+                to={section.path || "/"}
+                className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+                  isActive(section.path || "/")
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent"
+                }`}
+              >
+                {section.icon}
+                <span className="text-xs uppercase tracking-wider font-medium">{section.label}</span>
+              </Link>
             )}
           </div>
         ))}

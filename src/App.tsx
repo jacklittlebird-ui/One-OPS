@@ -18,6 +18,17 @@ import DelayCodesPage from "./pages/DelayCodes";
 import LostFoundPage from "./pages/LostFound";
 import StaffRosterPage from "./pages/StaffRoster";
 import ContractsPage from "./pages/Contracts";
+import TubePage from "./pages/Tube";
+import AirportTaxPage from "./pages/AirportTax";
+import BasicRampPage from "./pages/BasicRamp";
+import VendorEquipmentPage from "./pages/VendorEquipment";
+import HallVVIPPage from "./pages/HallVVIP";
+import CateringPage from "./pages/Catering";
+import TrafficRightsPage from "./pages/TrafficRights";
+import BulletinsPage from "./pages/Bulletins";
+import ManualsAndFormsPage from "./pages/ManualsAndForms";
+import AbbreviationsPage from "./pages/Abbreviations";
+import AircraftTypesPage from "./pages/AircraftTypes";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +52,17 @@ const App = () => (
           <Route path="/lost-found" element={<AppLayout><LostFoundPage /></AppLayout>} />
           <Route path="/staff-roster" element={<AppLayout><StaffRosterPage /></AppLayout>} />
           <Route path="/contracts" element={<AppLayout><ContractsPage /></AppLayout>} />
+          <Route path="/tube" element={<AppLayout><TubePage /></AppLayout>} />
+          <Route path="/airport-tax" element={<AppLayout><AirportTaxPage /></AppLayout>} />
+          <Route path="/basic-ramp" element={<AppLayout><BasicRampPage /></AppLayout>} />
+          <Route path="/vendor-equipment" element={<AppLayout><VendorEquipmentPage /></AppLayout>} />
+          <Route path="/hall-vvip" element={<AppLayout><HallVVIPPage /></AppLayout>} />
+          <Route path="/catering" element={<AppLayout><CateringPage /></AppLayout>} />
+          <Route path="/traffic-rights" element={<AppLayout><TrafficRightsPage /></AppLayout>} />
+          <Route path="/bulletins" element={<AppLayout><BulletinsPage /></AppLayout>} />
+          <Route path="/manuals-forms" element={<AppLayout><ManualsAndFormsPage /></AppLayout>} />
+          <Route path="/abbreviations" element={<AppLayout><AbbreviationsPage /></AppLayout>} />
+          <Route path="/aircraft-types" element={<AppLayout><AircraftTypesPage /></AppLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -50,4 +72,3 @@ const App = () => (
 );
 
 export default App;
-
