@@ -18,8 +18,8 @@ const SERVICE_CATEGORIES = ["Civil Aviation", "Ground Handling", "Catering", "Ho
 
 export default function ServiceProvidersPage() {
   const { data, isLoading, add, update, remove } = useSupabaseTable<ProviderRow>("service_providers");
-  const { data: countries } = useQuery({ queryKey: ["countries"], queryFn: async () => { const { data } = await supabase.from("countries" as any).select("id,name"); return (data || []) as { id: string; name: string }[]; } });
-  const { data: airports } = useQuery({ queryKey: ["airports"], queryFn: async () => { const { data } = await supabase.from("airports" as any).select("id,name,iata_code,country_id"); return (data || []) as { id: string; name: string; iata_code: string; country_id: string }[]; } });
+  const { data: countries } = useQuery({ queryKey: ["countries"], queryFn: async () => { const { data } = await supabase.from("countries" as any).select("id,name"); return (data || []) as unknown as { id: string; name: string }[]; } });
+  const { data: airports } = useQuery({ queryKey: ["airports"], queryFn: async () => { const { data } = await supabase.from("airports" as any).select("id,name,iata_code,country_id"); return (data || []) as unknown as { id: string; name: string; iata_code: string; country_id: string }[]; } });
 
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");

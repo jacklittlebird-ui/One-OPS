@@ -19,7 +19,7 @@ export default function AirportsPage() {
   const { data, isLoading, add, update, remove } = useSupabaseTable<AirportRow>("airports", { orderBy: "name", ascending: true });
   const { data: countries } = useQuery({
     queryKey: ["countries"],
-    queryFn: async () => { const { data } = await supabase.from("countries" as any).select("id,name,code").order("name"); return (data || []) as CountryRow[]; },
+    queryFn: async () => { const { data } = await supabase.from("countries" as any).select("id,name,code").order("name"); return (data || []) as unknown as CountryRow[]; },
   });
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState("all");
