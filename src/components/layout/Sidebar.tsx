@@ -105,6 +105,7 @@ export default function Sidebar() {
   });
   defaultExpanded["PRICES"] = defaultExpanded["PRICES"] ?? true;
   defaultExpanded["OPERATION"] = defaultExpanded["OPERATION"] ?? true;
+  defaultExpanded["CLEARANCE"] = defaultExpanded["CLEARANCE"] ?? true;
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(defaultExpanded);
   const toggle = (label: string) => setExpanded(prev => ({ ...prev, [label]: !prev[label] }));
