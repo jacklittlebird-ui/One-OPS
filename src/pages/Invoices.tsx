@@ -2,11 +2,14 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
   Search, Plus, Download, Upload, FileText, DollarSign,
   Pencil, Trash2, X, ChevronLeft, ChevronRight, CheckCircle,
-  Clock, XCircle, AlertCircle, Printer
+  Clock, XCircle, AlertCircle, Printer, ShieldCheck
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import InvoicePrintView from "@/components/InvoicePrintView";
 
 type InvoiceStatus = "Draft" | "Sent" | "Paid" | "Overdue" | "Cancelled";
@@ -249,12 +252,12 @@ export default function InvoicesPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr>{["#","INVOICE NO","DATE","DUE","OPERATOR","FLIGHT REF","SUBTOTAL","VAT","TOTAL","CURRENCY","STATUS","ACTIONS"].map(h => (
+            <thead><tr>{["#","INVOICE NO","DATE","DUE","OPERATOR","FLIGHT REF","TYPE","SUBTOTAL","VAT","TOTAL","CURRENCY","STATUS","ACTIONS"].map(h => (
               <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
             ))}</tr></thead>
             <tbody>
               {pageData.length === 0 ? (
-                <tr><td colSpan={12} className="text-center py-16"><FileText size={40} className="mx-auto text-muted-foreground/30 mb-3" /><p className="font-semibold text-foreground">No Invoices</p></td></tr>
+                <tr><td colSpan={13} className="text-center py-16"><FileText size={40} className="mx-auto text-muted-foreground/30 mb-3" /><p className="font-semibold text-foreground">No Invoices</p></td></tr>
               ) : pageData.map((inv, i) => (
                 <tr key={inv.id} className="data-table-row">
                   <td className="px-3 py-2.5 text-muted-foreground text-xs">{(page - 1) * PAGE_SIZE + i + 1}</td>
@@ -263,12 +266,20 @@ export default function InvoicesPage() {
                   <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{inv.due_date}</td>
                   <td className="px-3 py-2.5 font-semibold text-foreground">{inv.operator}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{inv.flight_ref}</td>
-                  <td className="px-3 py-2.5 text-foreground">${inv.subtotal.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">${inv.vat.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 font-bold text-success">${inv.total.toLocaleString()}</td>
+                  <td className="px-3 py-2.5">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${inv.invoice_type === "Final" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
+                      {inv.invoice_type || "Preliminary"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-foreground">${(inv.subtotal || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">${(inv.vat || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 font-bold text-success">${(inv.total || 0).toLocaleString()}</td>
                   <td className="px-3 py-2.5 text-muted-foreground">{inv.currency}</td>
                   <td className="px-3 py-2.5"><StatusBadge s={inv.status} /></td>
                   <td className="px-3 py-2.5 flex gap-1.5">
+                    {inv.invoice_type !== "Final" && (
+                      <button onClick={() => handleFinalize(inv)} className="text-success hover:text-success/80" title="Finalize"><ShieldCheck size={13} /></button>
+                    )}
                     <button onClick={() => setPrintInvoice(toPrintFormat(inv))} className="text-primary hover:text-primary/80"><Printer size={13} /></button>
                     <button onClick={() => startEdit(inv)} className="text-info hover:text-info/80"><Pencil size={13} /></button>
                     <button onClick={() => remove(inv.id)} className="text-destructive hover:text-destructive/80"><Trash2 size={13} /></button>
