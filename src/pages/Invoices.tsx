@@ -2,15 +2,19 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
   Search, Plus, Download, Upload, FileText, DollarSign,
   Pencil, Trash2, X, ChevronLeft, ChevronRight, CheckCircle,
-  Clock, XCircle, AlertCircle, Printer
+  Clock, XCircle, AlertCircle, Printer, ShieldCheck
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import InvoicePrintView from "@/components/InvoicePrintView";
 
 type InvoiceStatus = "Draft" | "Sent" | "Paid" | "Overdue" | "Cancelled";
 type InvoiceCurrency = "USD" | "EUR" | "EGP";
+type InvoiceType = "Preliminary" | "Final";
 
 type InvoiceRow = {
   id: string; invoice_no: string; date: string; due_date: string;
@@ -18,6 +22,8 @@ type InvoiceRow = {
   civil_aviation: number; handling: number; airport_charges: number;
   catering: number; other: number; subtotal: number; vat: number; total: number;
   currency: InvoiceCurrency; status: InvoiceStatus; notes: string;
+  invoice_type: InvoiceType; finalized_at: string | null; finalized_by: string | null;
+  journal_entry_id: string | null; sent_at: string | null; sent_to: string | null;
 };
 
 const statusConfig: Record<InvoiceStatus, { icon: React.ReactNode; cls: string }> = {
@@ -48,6 +54,7 @@ const emptyInvoice = (): Partial<InvoiceRow> => ({
   operator: "", airline_iata: "", flight_ref: "", description: "",
   civil_aviation: 0, handling: 0, airport_charges: 0, catering: 0, other: 0,
   subtotal: 0, vat: 0, total: 0, currency: "USD" as InvoiceCurrency, status: "Draft" as InvoiceStatus, notes: "",
+  invoice_type: "Preliminary" as InvoiceType,
 });
 
 function InvoiceForm({ data, onChange, onSave, onCancel, title }: { data: Partial<InvoiceRow>; onChange: (d: Partial<InvoiceRow>) => void; onSave: () => void; onCancel: () => void; title: string; }) {
@@ -91,10 +98,13 @@ function InvoiceForm({ data, onChange, onSave, onCancel, title }: { data: Partia
             <div className="text-center"><div className="text-xs text-muted-foreground uppercase font-semibold">VAT</div><div className="text-lg font-bold text-foreground">${(data.vat || 0).toFixed(2)}</div></div>
             <div className="text-center border-l"><div className="text-xs text-primary uppercase font-bold">Total</div><div className="text-2xl font-bold text-primary">${(data.total || 0).toFixed(2)}</div></div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <FormField label="Status"><select className={selectCls} value={data.status || "Draft"} onChange={e => set("status", e.target.value)}>{(["Draft","Sent","Paid","Overdue","Cancelled"] as InvoiceStatus[]).map(s => <option key={s}>{s}</option>)}</select></FormField>
             <FormField label="Currency"><select className={selectCls} value={data.currency || "USD"} onChange={e => set("currency", e.target.value)}>{(["USD","EUR","EGP"] as InvoiceCurrency[]).map(c => <option key={c}>{c}</option>)}</select></FormField>
-            <div className="col-span-2"><FormField label="Notes"><textarea className={inputCls + " resize-none"} rows={2} value={data.notes || ""} onChange={e => set("notes", e.target.value)} /></FormField></div>
+            <FormField label="Invoice Type"><select className={selectCls} value={data.invoice_type || "Preliminary"} onChange={e => set("invoice_type", e.target.value)}>{(["Preliminary","Final"] as InvoiceType[]).map(t => <option key={t}>{t}</option>)}</select></FormField>
+          </div>
+          <div>
+            <FormField label="Notes"><textarea className={inputCls + " resize-none"} rows={2} value={data.notes || ""} onChange={e => set("notes", e.target.value)} /></FormField>
           </div>
         </div>
         <div className="sticky bottom-0 bg-card border-t px-6 py-4 flex gap-3 justify-end rounded-b-xl">
@@ -109,7 +119,7 @@ function InvoiceForm({ data, onChange, onSave, onCancel, title }: { data: Partia
 const PAGE_SIZE = 15;
 
 export default function InvoicesPage() {
-  const location = useLocation();
+  const queryClient = useQueryClient();
   const { data: invoices, isLoading, add, update, remove, bulkInsert } = useSupabaseTable<InvoiceRow>("invoices");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -164,6 +174,59 @@ export default function InvoicesPage() {
     const { id, ...rest } = editData;
     await update({ id: editId, ...rest } as any);
     setEditId(null);
+  };
+
+  // Finalize: convert Preliminary → Final and auto-create journal entry
+  const handleFinalize = async (inv: InvoiceRow) => {
+    if (!confirm(`Finalize invoice ${inv.invoice_no}? This will create a journal entry.`)) return;
+    try {
+      // 1. Fetch receivable & revenue accounts
+      const { data: accounts } = await supabase.from("chart_of_accounts").select("id,code,name").in("code", ["1210", "4100", "4200", "4300", "4400"]);
+      const acctMap: Record<string, string> = {};
+      (accounts || []).forEach((a: any) => { acctMap[a.code] = a.id; });
+      const receivableId = acctMap["1210"];
+      if (!receivableId) { toast({ title: "Error", description: "Receivable account (1210) not found in Chart of Accounts", variant: "destructive" }); return; }
+
+      // 2. Create journal entry
+      const entryNo = `JE-INV-${inv.invoice_no}`;
+      const { data: je, error: jeErr } = await supabase.from("journal_entries").insert({
+        entry_no: entryNo, entry_date: inv.date, description: `Invoice ${inv.invoice_no} - ${inv.operator}`,
+        reference: inv.invoice_no, reference_type: "Invoice", reference_id: inv.id,
+        status: "Posted", total_debit: inv.total, total_credit: inv.total, created_by: "System",
+        posted_at: new Date().toISOString(),
+      } as any).select().single();
+      if (jeErr) throw jeErr;
+      const entryId = (je as any).id;
+
+      // 3. Create journal lines - debit receivable, credit revenue accounts
+      const lines: any[] = [];
+      lines.push({ entry_id: entryId, account_id: receivableId, debit: inv.total, credit: 0, description: `A/R - ${inv.operator}`, sort_order: 0 });
+      let sortOrder = 1;
+      if (inv.civil_aviation > 0 && acctMap["4200"]) { lines.push({ entry_id: entryId, account_id: acctMap["4200"], debit: 0, credit: inv.civil_aviation, description: "Civil Aviation Revenue", sort_order: sortOrder++ }); }
+      if (inv.handling > 0 && acctMap["4100"]) { lines.push({ entry_id: entryId, account_id: acctMap["4100"], debit: 0, credit: inv.handling, description: "Handling Revenue", sort_order: sortOrder++ }); }
+      if (inv.airport_charges > 0 && acctMap["4300"]) { lines.push({ entry_id: entryId, account_id: acctMap["4300"], debit: 0, credit: inv.airport_charges, description: "Airport Charges Revenue", sort_order: sortOrder++ }); }
+      if (inv.catering > 0 && acctMap["4400"]) { lines.push({ entry_id: entryId, account_id: acctMap["4400"], debit: 0, credit: inv.catering, description: "Catering Revenue", sort_order: sortOrder++ }); }
+      // Remaining amount to first revenue account
+      const creditTotal = lines.filter(l => l.credit > 0).reduce((s: number, l: any) => s + l.credit, 0);
+      const remaining = inv.total - creditTotal;
+      if (remaining > 0) {
+        const fallbackAcct = acctMap["4100"] || Object.values(acctMap).find(id => id !== receivableId);
+        if (fallbackAcct) lines.push({ entry_id: entryId, account_id: fallbackAcct, debit: 0, credit: remaining, description: "Other Revenue", sort_order: sortOrder++ });
+      }
+      await supabase.from("journal_entry_lines").insert(lines as any);
+
+      // 4. Update invoice to Final
+      await supabase.from("invoices").update({
+        invoice_type: "Final", finalized_at: new Date().toISOString(), finalized_by: "System",
+        journal_entry_id: entryId, status: "Sent",
+      } as any).eq("id", inv.id);
+
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+      toast({ title: "✅ Invoice Finalized", description: `Journal entry ${entryNo} created and posted.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleExport = () => {
@@ -242,12 +305,12 @@ export default function InvoicesPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr>{["#","INVOICE NO","DATE","DUE","OPERATOR","FLIGHT REF","SUBTOTAL","VAT","TOTAL","CURRENCY","STATUS","ACTIONS"].map(h => (
+            <thead><tr>{["#","INVOICE NO","DATE","DUE","OPERATOR","FLIGHT REF","TYPE","SUBTOTAL","VAT","TOTAL","CURRENCY","STATUS","ACTIONS"].map(h => (
               <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
             ))}</tr></thead>
             <tbody>
               {pageData.length === 0 ? (
-                <tr><td colSpan={12} className="text-center py-16"><FileText size={40} className="mx-auto text-muted-foreground/30 mb-3" /><p className="font-semibold text-foreground">No Invoices</p></td></tr>
+                <tr><td colSpan={13} className="text-center py-16"><FileText size={40} className="mx-auto text-muted-foreground/30 mb-3" /><p className="font-semibold text-foreground">No Invoices</p></td></tr>
               ) : pageData.map((inv, i) => (
                 <tr key={inv.id} className="data-table-row">
                   <td className="px-3 py-2.5 text-muted-foreground text-xs">{(page - 1) * PAGE_SIZE + i + 1}</td>
@@ -256,12 +319,20 @@ export default function InvoicesPage() {
                   <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{inv.due_date}</td>
                   <td className="px-3 py-2.5 font-semibold text-foreground">{inv.operator}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{inv.flight_ref}</td>
-                  <td className="px-3 py-2.5 text-foreground">${inv.subtotal.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">${inv.vat.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 font-bold text-success">${inv.total.toLocaleString()}</td>
+                  <td className="px-3 py-2.5">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${inv.invoice_type === "Final" ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
+                      {inv.invoice_type || "Preliminary"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-foreground">${(inv.subtotal || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">${(inv.vat || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 font-bold text-success">${(inv.total || 0).toLocaleString()}</td>
                   <td className="px-3 py-2.5 text-muted-foreground">{inv.currency}</td>
                   <td className="px-3 py-2.5"><StatusBadge s={inv.status} /></td>
                   <td className="px-3 py-2.5 flex gap-1.5">
+                    {inv.invoice_type !== "Final" && (
+                      <button onClick={() => handleFinalize(inv)} className="text-success hover:text-success/80" title="Finalize"><ShieldCheck size={13} /></button>
+                    )}
                     <button onClick={() => setPrintInvoice(toPrintFormat(inv))} className="text-primary hover:text-primary/80"><Printer size={13} /></button>
                     <button onClick={() => startEdit(inv)} className="text-info hover:text-info/80"><Pencil size={13} /></button>
                     <button onClick={() => remove(inv.id)} className="text-destructive hover:text-destructive/80"><Trash2 size={13} /></button>
