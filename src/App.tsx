@@ -36,6 +36,12 @@ import AirportsPage from "./pages/Airports";
 import ServiceProvidersPage from "./pages/ServiceProviders";
 import ClearancesPage from "./pages/Clearances";
 import ServicesCatalogPage from "./pages/ServicesCatalog";
+import ChartOfAccountsPage from "./pages/ChartOfAccounts";
+import JournalEntriesPage from "./pages/JournalEntries";
+import FinancialReportsPage from "./pages/FinancialReports";
+import VendorInvoicesPage from "./pages/VendorInvoices";
+import AgingReportsPage from "./pages/AgingReports";
+import AirlineIncentivesPage from "./pages/AirlineIncentives";
 
 const queryClient = new QueryClient();
 
