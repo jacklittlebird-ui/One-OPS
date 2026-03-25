@@ -229,6 +229,7 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleExport = () => {
     const ws = XLSX.utils.json_to_sheet(filtered.map(i => ({
       "Invoice No": i.invoice_no, Date: i.date, "Due Date": i.due_date,
       Operator: i.operator, IATA: i.airline_iata, "Flight Ref": i.flight_ref,
