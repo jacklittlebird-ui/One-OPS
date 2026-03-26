@@ -211,8 +211,8 @@ export default function JournalEntriesPage() {
                   <TableCell>{e.entry_date}</TableCell>
                   <TableCell className="max-w-xs truncate">{e.description}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{e.reference || "—"}</TableCell>
-                  <TableCell className="text-right font-mono">{e.total_debit.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-mono">{e.total_credit.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono">{(e.total_debit ?? 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono">{(e.total_credit ?? 0).toLocaleString()}</TableCell>
                   <TableCell><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[e.status] || ""}`}>{e.status}</span></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
