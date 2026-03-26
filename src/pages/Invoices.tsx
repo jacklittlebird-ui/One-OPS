@@ -24,6 +24,8 @@ type InvoiceRow = {
   currency: InvoiceCurrency; status: InvoiceStatus; notes: string;
   invoice_type: InvoiceType; finalized_at: string | null; finalized_by: string | null;
   journal_entry_id: string | null; sent_at: string | null; sent_to: string | null;
+  payment_date: string | null; payment_ref: string; billing_period: string;
+  credit_note_ref: string; station: string;
 };
 
 const statusConfig: Record<InvoiceStatus, { icon: React.ReactNode; cls: string }> = {
@@ -55,6 +57,7 @@ const emptyInvoice = (): Partial<InvoiceRow> => ({
   civil_aviation: 0, handling: 0, airport_charges: 0, catering: 0, other: 0,
   subtotal: 0, vat: 0, total: 0, currency: "USD" as InvoiceCurrency, status: "Draft" as InvoiceStatus, notes: "",
   invoice_type: "Preliminary" as InvoiceType,
+  payment_date: null, payment_ref: "", billing_period: "", credit_note_ref: "", station: "CAI",
 });
 
 function InvoiceForm({ data, onChange, onSave, onCancel, title }: { data: Partial<InvoiceRow>; onChange: (d: Partial<InvoiceRow>) => void; onSave: () => void; onCancel: () => void; title: string; }) {
@@ -98,10 +101,17 @@ function InvoiceForm({ data, onChange, onSave, onCancel, title }: { data: Partia
             <div className="text-center"><div className="text-xs text-muted-foreground uppercase font-semibold">VAT</div><div className="text-lg font-bold text-foreground">${(data.vat || 0).toFixed(2)}</div></div>
             <div className="text-center border-l"><div className="text-xs text-primary uppercase font-bold">Total</div><div className="text-2xl font-bold text-primary">${(data.total || 0).toFixed(2)}</div></div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <FormField label="Status"><select className={selectCls} value={data.status || "Draft"} onChange={e => set("status", e.target.value)}>{(["Draft","Sent","Paid","Overdue","Cancelled"] as InvoiceStatus[]).map(s => <option key={s}>{s}</option>)}</select></FormField>
-            <FormField label="Currency"><select className={selectCls} value={data.currency || "USD"} onChange={e => set("currency", e.target.value)}>{(["USD","EUR","EGP"] as InvoiceCurrency[]).map(c => <option key={c}>{c}</option>)}</select></FormField>
-            <FormField label="Invoice Type"><select className={selectCls} value={data.invoice_type || "Preliminary"} onChange={e => set("invoice_type", e.target.value)}>{(["Preliminary","Final"] as InvoiceType[]).map(t => <option key={t}>{t}</option>)}</select></FormField>
+          <div><h3 className="text-xs font-bold text-success uppercase tracking-wider mb-3">Payment & Billing</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <FormField label="Status"><select className={selectCls} value={data.status || "Draft"} onChange={e => set("status", e.target.value)}>{(["Draft","Sent","Paid","Overdue","Cancelled"] as InvoiceStatus[]).map(s => <option key={s}>{s}</option>)}</select></FormField>
+              <FormField label="Currency"><select className={selectCls} value={data.currency || "USD"} onChange={e => set("currency", e.target.value)}>{(["USD","EUR","EGP"] as InvoiceCurrency[]).map(c => <option key={c}>{c}</option>)}</select></FormField>
+              <FormField label="Invoice Type"><select className={selectCls} value={data.invoice_type || "Preliminary"} onChange={e => set("invoice_type", e.target.value)}>{(["Preliminary","Final"] as InvoiceType[]).map(t => <option key={t}>{t}</option>)}</select></FormField>
+              <FormField label="Station"><input className={inputCls} value={data.station || "CAI"} onChange={e => set("station", e.target.value)} placeholder="CAI" /></FormField>
+              <FormField label="Billing Period"><input className={inputCls} value={data.billing_period || ""} onChange={e => set("billing_period", e.target.value)} placeholder="Jan 2026" /></FormField>
+              <FormField label="Credit Note Ref."><input className={inputCls} value={data.credit_note_ref || ""} onChange={e => set("credit_note_ref", e.target.value)} placeholder="CN-2026-001" /></FormField>
+              <FormField label="Payment Date"><input type="date" className={inputCls} value={data.payment_date || ""} onChange={e => set("payment_date", e.target.value || null)} /></FormField>
+              <FormField label="Payment Reference"><input className={inputCls} value={data.payment_ref || ""} onChange={e => set("payment_ref", e.target.value)} placeholder="Wire TXN #" /></FormField>
+            </div>
           </div>
           <div>
             <FormField label="Notes"><textarea className={inputCls + " resize-none"} rows={2} value={data.notes || ""} onChange={e => set("notes", e.target.value)} /></FormField>
@@ -276,14 +286,15 @@ export default function InvoicesPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><FileText size={22} className="text-primary" /> Invoices</h1>
-        <p className="text-muted-foreground text-sm mt-1">Airline invoicing & financial records</p>
+        <p className="text-muted-foreground text-sm mt-1">IATA SIS-compliant airline invoicing & payment tracking</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="stat-card"><div className="stat-card-icon bg-primary"><FileText size={20} /></div><div><div className="text-2xl font-bold text-foreground">{invoices.length}</div><div className="text-xs text-muted-foreground">Total Invoices</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-success"><CheckCircle size={20} /></div><div><div className="text-2xl font-bold text-foreground">${totalPaid.toLocaleString()}</div><div className="text-xs text-muted-foreground">Paid</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-info"><Clock size={20} /></div><div><div className="text-2xl font-bold text-foreground">${totalPending.toLocaleString()}</div><div className="text-xs text-muted-foreground">Pending</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-destructive"><AlertCircle size={20} /></div><div><div className="text-2xl font-bold text-foreground">${totalOverdue.toLocaleString()}</div><div className="text-xs text-muted-foreground">Overdue</div></div></div>
+        <div className="stat-card"><div className="stat-card-icon bg-muted"><DollarSign size={20} /></div><div><div className="text-2xl font-bold text-foreground">{invoices.filter(i => i.status === "Draft").length}</div><div className="text-xs text-muted-foreground">Drafts</div></div></div>
       </div>
 
       <div className="bg-card rounded-lg border overflow-hidden">
