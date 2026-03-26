@@ -598,13 +598,19 @@ export type Database = {
           airline_iata: string | null
           annual_value: number
           auto_renew: boolean
+          billing_frequency: string
+          contact_email: string
+          contact_person: string
           contract_no: string
+          contract_type: string
           created_at: string
           currency: Database["public"]["Enums"]["currency_type"]
           end_date: string
           id: string
           notes: string | null
+          payment_terms: string
           services: string | null
+          sgha_ref: string
           start_date: string
           stations: string | null
           status: Database["public"]["Enums"]["contract_status"]
@@ -615,13 +621,19 @@ export type Database = {
           airline_iata?: string | null
           annual_value?: number
           auto_renew?: boolean
+          billing_frequency?: string
+          contact_email?: string
+          contact_person?: string
           contract_no: string
+          contract_type?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_type"]
           end_date: string
           id?: string
           notes?: string | null
+          payment_terms?: string
           services?: string | null
+          sgha_ref?: string
           start_date: string
           stations?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
@@ -632,13 +644,19 @@ export type Database = {
           airline_iata?: string | null
           annual_value?: number
           auto_renew?: boolean
+          billing_frequency?: string
+          contact_email?: string
+          contact_person?: string
           contract_no?: string
+          contract_type?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_type"]
           end_date?: string
           id?: string
           notes?: string | null
+          payment_terms?: string
           services?: string | null
+          sgha_ref?: string
           start_date?: string
           stations?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
