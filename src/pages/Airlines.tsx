@@ -15,7 +15,7 @@ const statusIcon = (s: string) => {
   return <AlertCircle size={14} className="text-warning inline mr-1" />;
 };
 
-type AirlineRow = { id: string; code: string; name: string; country: string; contact_person: string; email: string; phone: string; status: string };
+type AirlineRow = { id: string; code: string; name: string; country: string; contact_person: string; email: string; phone: string; status: string; credit_terms: string; billing_currency: string; iata_code: string; icao_code: string; alliance: string };
 
 export default function AirlinesPage() {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export default function AirlinesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<Partial<AirlineRow>>({});
   const [showAdd, setShowAdd] = useState(false);
-  const [newRow, setNewRow] = useState<Partial<AirlineRow>>({ code: "", name: "", country: "", contact_person: "", email: "", phone: "", status: "Active" });
+  const [newRow, setNewRow] = useState<Partial<AirlineRow>>({ code: "", name: "", country: "", contact_person: "", email: "", phone: "", status: "Active", credit_terms: "Net 30", billing_currency: "USD", iata_code: "", icao_code: "", alliance: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(() => {
