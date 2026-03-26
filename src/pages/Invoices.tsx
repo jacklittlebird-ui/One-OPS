@@ -286,14 +286,15 @@ export default function InvoicesPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><FileText size={22} className="text-primary" /> Invoices</h1>
-        <p className="text-muted-foreground text-sm mt-1">Airline invoicing & financial records</p>
+        <p className="text-muted-foreground text-sm mt-1">IATA SIS-compliant airline invoicing & payment tracking</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="stat-card"><div className="stat-card-icon bg-primary"><FileText size={20} /></div><div><div className="text-2xl font-bold text-foreground">{invoices.length}</div><div className="text-xs text-muted-foreground">Total Invoices</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-success"><CheckCircle size={20} /></div><div><div className="text-2xl font-bold text-foreground">${totalPaid.toLocaleString()}</div><div className="text-xs text-muted-foreground">Paid</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-info"><Clock size={20} /></div><div><div className="text-2xl font-bold text-foreground">${totalPending.toLocaleString()}</div><div className="text-xs text-muted-foreground">Pending</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-destructive"><AlertCircle size={20} /></div><div><div className="text-2xl font-bold text-foreground">${totalOverdue.toLocaleString()}</div><div className="text-xs text-muted-foreground">Overdue</div></div></div>
+        <div className="stat-card"><div className="stat-card-icon bg-muted"><DollarSign size={20} /></div><div><div className="text-2xl font-bold text-foreground">{invoices.filter(i => i.status === "Draft").length}</div><div className="text-xs text-muted-foreground">Drafts</div></div></div>
       </div>
 
       <div className="bg-card rounded-lg border overflow-hidden">
