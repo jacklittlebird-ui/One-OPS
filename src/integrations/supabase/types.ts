@@ -300,6 +300,45 @@ export type Database = {
         }
         Relationships: []
       }
+      airport_charges: {
+        Row: {
+          air_navigation: number
+          created_at: string
+          housing: number
+          id: string
+          landing_day: number
+          landing_night: number
+          mtow: string
+          parking_day: number
+          parking_night: number
+          vendor_name: string
+        }
+        Insert: {
+          air_navigation?: number
+          created_at?: string
+          housing?: number
+          id?: string
+          landing_day?: number
+          landing_night?: number
+          mtow?: string
+          parking_day?: number
+          parking_night?: number
+          vendor_name?: string
+        }
+        Update: {
+          air_navigation?: number
+          created_at?: string
+          housing?: number
+          id?: string
+          landing_day?: number
+          landing_night?: number
+          mtow?: string
+          parking_day?: number
+          parking_night?: number
+          vendor_name?: string
+        }
+        Relationships: []
+      }
       airport_tax: {
         Row: {
           amount: string
