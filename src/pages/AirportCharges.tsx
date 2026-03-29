@@ -3,45 +3,55 @@ import {
   Search, Plus, Trash2, Upload, Download, Building2, Layers, Database,
   MonitorCog, Pencil, X, FileUp, ChevronLeft, ChevronRight
 } from "lucide-react";
-import {
-  AirportCharge,
-  generateAllCharges,
-  getUniqueVendors,
-  getUniqueMTOW,
-} from "@/data/airportChargesData";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
 import * as XLSX from "xlsx";
+
+interface AirportChargeRow {
+  id: string;
+  vendor_name: string;
+  mtow: string;
+  landing_day: number;
+  landing_night: number;
+  parking_day: number;
+  parking_night: number;
+  housing: number;
+  air_navigation: number;
+  created_at: string;
+}
 
 const PAGE_SIZE = 25;
 
 export default function AirportChargesPage() {
-  const [data, setData] = useLocalStorage<AirportCharge[]>("link_airport_charges", () => generateAllCharges());
+  const { data, isLoading, add, update, remove, bulkInsert } = useSupabaseTable<AirportChargeRow>("airport_charges", { orderBy: "created_at", ascending: true });
   const [search, setSearch] = useState("");
   const [vendorFilter, setVendorFilter] = useState("All Vendors");
   const [mtowFilter, setMtowFilter] = useState("All MTOW");
   const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editRow, setEditRow] = useState<Partial<AirportCharge>>({});
+  const [editRow, setEditRow] = useState<Partial<AirportChargeRow>>({});
   const [showAdd, setShowAdd] = useState(false);
-  const [newRow, setNewRow] = useState<Partial<AirportCharge>>({
-    vendorName: "", mtow: "", landingDay: 0, landingNight: 0,
-    parkingDay: 0, parkingNight: 0, housing: 0, airNavigation: 0,
+  const [newRow, setNewRow] = useState({
+    vendor_name: "", mtow: "", landing_day: 0, landing_night: 0,
+    parking_day: 0, parking_night: 0, housing: 0, air_navigation: 0,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const vendors = useMemo(() => getUniqueVendors(data), [data]);
-  const mtows = useMemo(() => getUniqueMTOW(data), [data]);
+  const vendors = useMemo(() => [...new Set(data.map(d => d.vendor_name))], [data]);
+  const mtows = useMemo(() => {
+    const m = [...new Set(data.map(d => d.mtow))];
+    return m.sort((a, b) => parseInt(a) - parseInt(b));
+  }, [data]);
 
   const filtered = useMemo(() => {
     let result = data;
-    if (vendorFilter !== "All Vendors") result = result.filter(r => r.vendorName === vendorFilter);
+    if (vendorFilter !== "All Vendors") result = result.filter(r => r.vendor_name === vendorFilter);
     if (mtowFilter !== "All MTOW") result = result.filter(r => r.mtow === mtowFilter);
     if (search) {
       const s = search.toLowerCase();
       result = result.filter(r =>
-        r.vendorName.toLowerCase().includes(s) ||
+        r.vendor_name.toLowerCase().includes(s) ||
         r.mtow.toLowerCase().includes(s) ||
-        String(r.landingDay).includes(s)
+        String(r.landing_day).includes(s)
       );
     }
     return result;
@@ -50,63 +60,61 @@ export default function AirportChargesPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const uniqueVendorCount = new Set(data.map(d => d.vendorName)).size;
+  const uniqueVendorCount = new Set(data.map(d => d.vendor_name)).size;
   const uniqueMtowCount = new Set(data.map(d => d.mtow)).size;
 
-  const startEdit = (row: AirportCharge) => {
+  const startEdit = (row: AirportChargeRow) => {
     setEditingId(row.id);
     setEditRow({ ...row });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editingId) return;
-    setData(prev => prev.map(r => r.id === editingId ? { ...r, ...editRow } as AirportCharge : r));
+    const { id, created_at, ...updates } = editRow as AirportChargeRow;
+    await update({ id: editingId, ...updates });
     setEditingId(null);
   };
 
-  const deleteRow = (id: string) => setData(prev => prev.filter(r => r.id !== id));
+  const deleteRow = (id: string) => remove(id);
 
-  const addRow = () => {
-    if (!newRow.vendorName || !newRow.mtow) return;
-    setData(prev => [...prev, { ...newRow, id: String(Date.now()) } as AirportCharge]);
+  const addRow = async () => {
+    if (!newRow.vendor_name || !newRow.mtow) return;
+    await add(newRow);
     setShowAdd(false);
-    setNewRow({ vendorName: "", mtow: "", landingDay: 0, landingNight: 0, parkingDay: 0, parkingNight: 0, housing: 0, airNavigation: 0 });
+    setNewRow({ vendor_name: "", mtow: "", landing_day: 0, landing_night: 0, parking_day: 0, parking_night: 0, housing: 0, air_navigation: 0 });
   };
 
-  const clearAll = () => { setData([]); setPage(1); };
-
-  const handleUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       const wb = XLSX.read(evt.target?.result, { type: "binary" });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json<any>(ws);
-      const imported: AirportCharge[] = json.map((row: any, i: number) => ({
-        id: String(Date.now() + i),
-        vendorName: row["Vendor Name"] || row.vendorName || "",
+      const imported = json.map((row: any) => ({
+        vendor_name: row["Vendor Name"] || row.vendor_name || "",
         mtow: row["MTOW"] || row.mtow || "",
-        landingDay: Number(row["Landing Day"] || row.landingDay || 0),
-        landingNight: Number(row["Landing Night"] || row.landingNight || 0),
-        parkingDay: Number(row["Parking Day"] || row.parkingDay || 0),
-        parkingNight: Number(row["Parking Night"] || row.parkingNight || 0),
+        landing_day: Number(row["Landing Day"] || row.landing_day || 0),
+        landing_night: Number(row["Landing Night"] || row.landing_night || 0),
+        parking_day: Number(row["Parking Day"] || row.parking_day || 0),
+        parking_night: Number(row["Parking Night"] || row.parking_night || 0),
         housing: Number(row["Housing"] || row.housing || 0),
-        airNavigation: Number(row["Air Navigation"] || row.airNavigation || 0),
+        air_navigation: Number(row["Air Navigation"] || row.air_navigation || 0),
       }));
-      setData(imported);
+      await bulkInsert(imported);
       setPage(1);
     };
     reader.readAsBinaryString(file);
     e.target.value = "";
-  }, []);
+  }, [bulkInsert]);
 
   const handleExport = () => {
     const ws = XLSX.utils.json_to_sheet(
       filtered.map(r => ({
-        "Vendor Name": r.vendorName, MTOW: r.mtow, "Landing Day": r.landingDay,
-        "Landing Night": r.landingNight, "Parking Day": r.parkingDay,
-        "Parking Night": r.parkingNight, Housing: r.housing, "Air Navigation": r.airNavigation,
+        "Vendor Name": r.vendor_name, MTOW: r.mtow, "Landing Day": r.landing_day,
+        "Landing Night": r.landing_night, "Parking Day": r.parking_day,
+        "Parking Night": r.parking_night, Housing: r.housing, "Air Navigation": r.air_navigation,
       }))
     );
     const wb = XLSX.utils.book_new();
@@ -115,6 +123,14 @@ export default function AirportChargesPage() {
   };
 
   const columns = ["VENDOR NAME", "MTOW", "LANDING DAY", "LANDING NIGHT", "PARKING DAY", "PARKING NIGHT", "HOUSING", "AIR NAVIGATION", "ACTIONS"];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -165,7 +181,6 @@ export default function AirportChargesPage() {
             {mtows.map(m => <option key={m}>{m}</option>)}
           </select>
           <button onClick={() => setShowAdd(true)} className="toolbar-btn-primary"><Plus size={14} /> Add Charge</button>
-          <button onClick={clearAll} className="toolbar-btn-destructive"><Trash2 size={14} /> Clear All Data</button>
           <button onClick={() => fileInputRef.current?.click()} className="toolbar-btn-success"><Upload size={14} /> Upload Excel</button>
           <button onClick={handleExport} className="toolbar-btn-outline"><Download size={14} /> Export</button>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleUpload} />
@@ -175,9 +190,9 @@ export default function AirportChargesPage() {
         {showAdd && (
           <div className="p-4 border-b bg-muted">
             <div className="grid grid-cols-9 gap-2 items-end">
-              <input placeholder="Vendor Name" value={newRow.vendorName} onChange={e => setNewRow(p => ({ ...p, vendorName: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
+              <input placeholder="Vendor Name" value={newRow.vendor_name} onChange={e => setNewRow(p => ({ ...p, vendor_name: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
               <input placeholder="MTOW" value={newRow.mtow} onChange={e => setNewRow(p => ({ ...p, mtow: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              {(["landingDay", "landingNight", "parkingDay", "parkingNight", "housing", "airNavigation"] as const).map(f => (
+              {(["landing_day", "landing_night", "parking_day", "parking_night", "housing", "air_navigation"] as const).map(f => (
                 <input key={f} type="number" placeholder={f} value={newRow[f] || 0} onChange={e => setNewRow(p => ({ ...p, [f]: +e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
               ))}
               <div className="flex gap-1">
@@ -213,9 +228,9 @@ export default function AirportChargesPage() {
                   <tr key={row.id} className="data-table-row">
                     {editingId === row.id ? (
                       <>
-                        <td className="px-4 py-2"><input value={editRow.vendorName || ""} onChange={e => setEditRow(p => ({ ...p, vendorName: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-full bg-card text-foreground" /></td>
+                        <td className="px-4 py-2"><input value={editRow.vendor_name || ""} onChange={e => setEditRow(p => ({ ...p, vendor_name: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-full bg-card text-foreground" /></td>
                         <td className="px-4 py-2"><input value={editRow.mtow || ""} onChange={e => setEditRow(p => ({ ...p, mtow: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-24 bg-card text-foreground" /></td>
-                        {(["landingDay", "landingNight", "parkingDay", "parkingNight", "housing", "airNavigation"] as const).map(f => (
+                        {(["landing_day", "landing_night", "parking_day", "parking_night", "housing", "air_navigation"] as const).map(f => (
                           <td key={f} className="px-4 py-2"><input type="number" value={editRow[f] ?? 0} onChange={e => setEditRow(p => ({ ...p, [f]: +e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-20 bg-card text-foreground" /></td>
                         ))}
                         <td className="px-4 py-2 flex gap-1">
@@ -225,14 +240,14 @@ export default function AirportChargesPage() {
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-2.5 text-foreground">{row.vendorName}</td>
+                        <td className="px-4 py-2.5 text-foreground">{row.vendor_name}</td>
                         <td className="px-4 py-2.5 text-foreground">{row.mtow}</td>
-                        <td className="px-4 py-2.5 text-foreground">{row.landingDay}</td>
-                        <td className="px-4 py-2.5 text-foreground">{row.landingNight}</td>
-                        <td className="px-4 py-2.5 text-foreground">{row.parkingDay}</td>
-                        <td className="px-4 py-2.5 text-foreground">{row.parkingNight}</td>
+                        <td className="px-4 py-2.5 text-foreground">{row.landing_day}</td>
+                        <td className="px-4 py-2.5 text-foreground">{row.landing_night}</td>
+                        <td className="px-4 py-2.5 text-foreground">{row.parking_day}</td>
+                        <td className="px-4 py-2.5 text-foreground">{row.parking_night}</td>
                         <td className="px-4 py-2.5 text-foreground">{row.housing}</td>
-                        <td className="px-4 py-2.5 text-foreground">{row.airNavigation}</td>
+                        <td className="px-4 py-2.5 text-foreground">{row.air_navigation}</td>
                         <td className="px-4 py-2.5 flex gap-2">
                           <button onClick={() => startEdit(row)} className="text-info hover:text-info/80"><Pencil size={14} /></button>
                           <button onClick={() => deleteRow(row.id)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
