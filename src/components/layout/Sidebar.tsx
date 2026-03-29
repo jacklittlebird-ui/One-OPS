@@ -92,10 +92,6 @@ const navSections: NavSection[] = [
   },
 ];
 
-const STORAGE_KEYS = [
-  "link_airlines", "link_aircrafts", "link_flights",
-  "link_airport_charges", "link_service_reports", "link_invoices",
-];
 
 export default function Sidebar() {
   const location = useLocation();
