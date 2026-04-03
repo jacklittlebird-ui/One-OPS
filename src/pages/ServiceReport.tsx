@@ -298,7 +298,7 @@ function ReportForm({ data, onChange, onSave, onCancel, title }: ReportFormProps
     const newDelays = [...delays];
     newDelays[index] = { ...newDelays[index], [field]: val };
     if (field === "code") {
-      const found = sampleDelayCodes.find(dc => dc.code === val);
+      const found = delayCodes.find(dc => dc.code === val);
       newDelays[index].explanation = found?.description || "";
     }
     onChange({ ...data, delays: newDelays });
