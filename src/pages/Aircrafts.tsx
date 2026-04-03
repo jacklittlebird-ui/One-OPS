@@ -2,60 +2,72 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search, Plus, Trash2, Upload, Download, PlaneTakeoff, Wrench,
-  Pencil, X, Database, ChevronLeft, ChevronRight, CheckCircle, XCircle, Layers, Plane, Building2
+  Pencil, Database, ChevronLeft, ChevronRight, CheckCircle, XCircle, Layers,
+  Plane, Building2, Eye, AlertTriangle, Calendar
 } from "lucide-react";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import * as XLSX from "xlsx";
 
 const PAGE_SIZE = 25;
 
-const statusBadge = (s: string) => {
-  if (s === "Operational") return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/15 text-success"><CheckCircle size={12} />{s}</span>;
-  if (s === "Maintenance") return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning/15 text-warning"><Wrench size={12} />{s}</span>;
-  return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-destructive/15 text-destructive"><XCircle size={12} />{s}</span>;
-};
-
 type AircraftRow = { id: string; registration: string; type: string; airline: string; model: string; mtow: number; seats: number; certificate_no: string; issue_date: string; status: string };
+
+const statusBadge = (s: string) => {
+  if (s === "Operational") return <Badge variant="default" className="gap-1"><CheckCircle size={12} />{s}</Badge>;
+  if (s === "Maintenance") return <Badge className="gap-1 bg-warning/15 text-warning border-warning/30"><Wrench size={12} />{s}</Badge>;
+  return <Badge variant="destructive" className="gap-1"><XCircle size={12} />{s}</Badge>;
+};
 
 export default function AircraftsPage() {
   const navigate = useNavigate();
   const { data, isLoading, add, update, remove } = useSupabaseTable<AircraftRow>("aircrafts", { orderBy: "registration", ascending: true });
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All Types");
-  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [airlineFilter, setAirlineFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editRow, setEditRow] = useState<Partial<AircraftRow>>({});
-  const [showAdd, setShowAdd] = useState(false);
-  const [newRow, setNewRow] = useState<Partial<AircraftRow>>({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Operational" });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<AircraftRow | null>(null);
+  const [inspectItem, setInspectItem] = useState<AircraftRow | null>(null);
+  const [form, setForm] = useState({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Operational" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const types = useMemo(() => [...new Set(data.map(d => d.type))], [data]);
+  const types = useMemo(() => [...new Set(data.map(d => d.type).filter(Boolean))].sort(), [data]);
+  const airlines = useMemo(() => [...new Set(data.map(d => d.airline).filter(Boolean))].sort(), [data]);
 
   const filtered = useMemo(() => {
     let result = data;
-    if (typeFilter !== "All Types") result = result.filter(r => r.type === typeFilter);
-    if (statusFilter !== "All Status") result = result.filter(r => r.status === statusFilter);
+    if (typeFilter !== "all") result = result.filter(r => r.type === typeFilter);
+    if (statusFilter !== "all") result = result.filter(r => r.status === statusFilter);
+    if (airlineFilter !== "all") result = result.filter(r => r.airline === airlineFilter);
     if (search) {
       const s = search.toLowerCase();
-      result = result.filter(r => r.registration.toLowerCase().includes(s) || r.model.toLowerCase().includes(s) || r.airline.toLowerCase().includes(s));
+      result = result.filter(r => r.registration.toLowerCase().includes(s) || r.model.toLowerCase().includes(s) || r.airline.toLowerCase().includes(s) || r.certificate_no?.toLowerCase().includes(s));
     }
     return result;
-  }, [data, typeFilter, statusFilter, search]);
+  }, [data, typeFilter, statusFilter, airlineFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const operationalCount = data.filter(d => d.status === "Operational").length;
+  const maintenanceCount = data.filter(d => d.status === "Maintenance").length;
   const airlinesCount = new Set(data.map(d => d.airline)).size;
 
-  const startEdit = (row: AircraftRow) => { setEditingId(row.id); setEditRow({ ...row }); };
-  const saveEdit = async () => { if (!editingId) return; await update({ id: editingId, ...editRow } as any); setEditingId(null); };
-  const deleteRow = (id: string) => remove(id);
-  const addRow = async () => {
-    if (!newRow.registration || !newRow.model) return;
-    await add(newRow);
-    setShowAdd(false);
-    setNewRow({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Operational" });
+  const openAdd = () => { setEditItem(null); setForm({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Operational" }); setDialogOpen(true); };
+  const openEdit = (row: AircraftRow) => { setEditItem(row); setForm({ ...row }); setDialogOpen(true); };
+
+  const handleSave = async () => {
+    if (!form.registration || !form.model) return;
+    if (editItem) { await update({ id: editItem.id, ...form } as any); } else { await add(form as any); }
+    setDialogOpen(false);
   };
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +79,7 @@ export default function AircraftsPage() {
       for (const row of json) {
         await add({
           registration: row["Registration"] || "", type: row["Type"] || "", airline: row["Airline"] || "",
-          model: row["Model"] || "", mtow: Number(row["MTOW (T)"] || 0), seats: Number(row["Seats"] || 0),
+          model: row["Model"] || "", mtow: Number(row["MTOW"] || 0), seats: Number(row["Seats"] || 0),
           certificate_no: row["Certificate No."] || "", issue_date: row["Issue Date"] || null,
           status: row["Status"] || "Operational",
         });
@@ -81,132 +93,225 @@ export default function AircraftsPage() {
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Aircrafts"); XLSX.writeFile(wb, "aircrafts.xlsx");
   };
 
-  const columns = ["REGISTRATION", "TYPE", "AIRLINE", "MODEL", "MTOW (T)", "SEATS", "CERTIFICATE NO.", "ISSUE DATE", "STATUS", "ACTIONS"];
+  // Certificate expiry check
+  const isExpiringSoon = (date: string) => {
+    if (!date) return false;
+    const d = new Date(date);
+    const now = new Date();
+    const diff = d.getTime() - now.getTime();
+    return diff > 0 && diff < 90 * 24 * 60 * 60 * 1000; // 90 days
+  };
+
+  if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-2xl font-bold text-foreground">Aircrafts</h1>
-        <div className="flex gap-2">
-          <button onClick={() => navigate("/flight-schedule")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-semibold text-primary border-primary/40 hover:bg-primary/10 transition-colors"><Plane size={14} /> Flights</button>
-          <button onClick={() => navigate("/airlines")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-semibold text-info border-info/40 hover:bg-info/10 transition-colors"><Building2 size={14} /> Airlines</button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Aircrafts</h1>
+          <p className="text-muted-foreground text-sm">Fleet registry, specifications & airworthiness certificates</p>
         </div>
-      </div>
-      <p className="text-muted-foreground text-sm mt-1 mb-6">Aircraft fleet registry and specifications</p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="stat-card"><div className="stat-card-icon bg-primary"><PlaneTakeoff size={20} /></div><div><div className="text-2xl font-bold text-foreground">{data.length}</div><div className="text-xs text-muted-foreground">Total Aircraft</div></div></div>
-        <div className="stat-card"><div className="stat-card-icon bg-success"><CheckCircle size={20} /></div><div><div className="text-2xl font-bold text-foreground">{operationalCount}</div><div className="text-xs text-muted-foreground">Operational</div></div></div>
-        <div className="stat-card"><div className="stat-card-icon bg-info"><Layers size={20} /></div><div><div className="text-2xl font-bold text-foreground">{types.length}</div><div className="text-xs text-muted-foreground">Aircraft Types</div></div></div>
-        <div className="stat-card"><div className="stat-card-icon bg-accent"><PlaneTakeoff size={20} /></div><div><div className="text-2xl font-bold text-foreground">{airlinesCount}</div><div className="text-xs text-muted-foreground">Airlines</div></div></div>
-      </div>
-
-      <div className="bg-card rounded-lg border overflow-hidden">
-        <div className="p-4 border-b flex flex-wrap items-center gap-3">
-          <h2 className="text-base font-semibold text-foreground mr-auto">Aircraft Registry</h2>
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input type="text" placeholder="Search aircraft…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-              className="pl-8 pr-3 py-1.5 text-sm border rounded bg-card text-foreground placeholder:text-muted-foreground w-56 focus:outline-none focus:ring-1 focus:ring-primary" />
-          </div>
-          <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-            <option>All Types</option>{types.map(t => <option key={t}>{t}</option>)}
-          </select>
-          <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-            <option>All Status</option><option>Operational</option><option>Maintenance</option><option>Grounded</option>
-          </select>
-          <button onClick={() => setShowAdd(true)} className="toolbar-btn-primary"><Plus size={14} /> Add Aircraft</button>
-          <button onClick={() => fileInputRef.current?.click()} className="toolbar-btn-success"><Upload size={14} /> Upload</button>
-          <button onClick={handleExport} className="toolbar-btn-outline"><Download size={14} /> Export</button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/flight-schedule")}><Plane size={14} className="mr-1" /> Flights</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/airlines")}><Building2 size={14} className="mr-1" /> Airlines</Button>
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload size={14} className="mr-1" /> Import</Button>
+          <Button variant="outline" size="sm" onClick={handleExport}><Download size={14} className="mr-1" /> Export</Button>
+          <Button onClick={openAdd}><Plus size={16} className="mr-1" /> Add Aircraft</Button>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleUpload} />
         </div>
+      </div>
 
-        {showAdd && (
-          <div className="p-4 border-b bg-muted">
-            <div className="grid grid-cols-10 gap-2 items-end">
-              <input placeholder="Registration" value={newRow.registration} onChange={e => setNewRow(p => ({ ...p, registration: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <input placeholder="Type" value={newRow.type} onChange={e => setNewRow(p => ({ ...p, type: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <input placeholder="Airline" value={newRow.airline} onChange={e => setNewRow(p => ({ ...p, airline: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <input placeholder="Model" value={newRow.model} onChange={e => setNewRow(p => ({ ...p, model: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <input placeholder="MTOW (T)" type="number" step="0.1" value={newRow.mtow || 0} onChange={e => setNewRow(p => ({ ...p, mtow: +e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <input placeholder="Seats" type="number" value={newRow.seats || 0} onChange={e => setNewRow(p => ({ ...p, seats: +e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <input placeholder="Certificate No." value={newRow.certificate_no} onChange={e => setNewRow(p => ({ ...p, certificate_no: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <input placeholder="Issue Date" type="date" value={newRow.issue_date} onChange={e => setNewRow(p => ({ ...p, issue_date: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" />
-              <select value={newRow.status} onChange={e => setNewRow(p => ({ ...p, status: e.target.value }))} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-                <option>Operational</option><option>Maintenance</option><option>Grounded</option>
-              </select>
-              <div className="flex gap-1">
-                <button onClick={addRow} className="toolbar-btn-success text-xs py-1">Save</button>
-                <button onClick={() => setShowAdd(false)} className="toolbar-btn-outline text-xs py-1"><X size={12} /></button>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card><CardContent className="p-4 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><PlaneTakeoff className="text-primary" size={20} /></div>
+          <div><div className="text-2xl font-bold text-foreground">{data.length}</div><div className="text-xs text-muted-foreground">Total Aircraft</div></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center"><CheckCircle className="text-success" size={20} /></div>
+          <div><div className="text-2xl font-bold text-foreground">{operationalCount}</div><div className="text-xs text-muted-foreground">Operational</div></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center"><Wrench className="text-warning" size={20} /></div>
+          <div><div className="text-2xl font-bold text-foreground">{maintenanceCount}</div><div className="text-xs text-muted-foreground">In Maintenance</div></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-lg bg-info/10 flex items-center justify-center"><Layers className="text-info" size={20} /></div>
+          <div><div className="text-2xl font-bold text-foreground">{types.length}</div><div className="text-xs text-muted-foreground">Aircraft Types</div></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-4">
+          <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center"><Building2 className="text-accent-foreground" size={20} /></div>
+          <div><div className="text-2xl font-bold text-foreground">{airlinesCount}</div><div className="text-xs text-muted-foreground">Airlines</div></div>
+        </CardContent></Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
+          <Input placeholder="Search by registration, model, airline, or certificate…" className="pl-9" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+        </div>
+        <Select value={airlineFilter} onValueChange={v => { setAirlineFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-44"><SelectValue placeholder="All Airlines" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All Airlines</SelectItem>{airlines.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={v => { setTypeFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-36"><SelectValue placeholder="All Types" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All Types</SelectItem>{types.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="Operational">Operational</SelectItem><SelectItem value="Maintenance">Maintenance</SelectItem><SelectItem value="Grounded">Grounded</SelectItem></SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Registration</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Airline</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead>MTOW (T)</TableHead>
+                <TableHead>Seats</TableHead>
+                <TableHead>Certificate</TableHead>
+                <TableHead>Issue Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-28">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageData.length === 0 ? (
+                <TableRow><TableCell colSpan={10} className="text-center py-12">
+                  <Database size={40} className="mx-auto text-muted-foreground/40 mb-3" />
+                  <p className="font-semibold text-foreground">No Aircraft Found</p>
+                </TableCell></TableRow>
+              ) : pageData.map(row => (
+                <TableRow key={row.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setInspectItem(row)}>
+                  <TableCell className="font-mono font-semibold text-foreground">{row.registration}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-xs">{row.type || "—"}</Badge></TableCell>
+                  <TableCell>{row.airline}</TableCell>
+                  <TableCell>{row.model}</TableCell>
+                  <TableCell className="font-mono">{row.mtow}</TableCell>
+                  <TableCell>{row.seats}</TableCell>
+                  <TableCell className="font-mono text-xs">{row.certificate_no || "—"}</TableCell>
+                  <TableCell className="text-sm">
+                    {row.issue_date || "—"}
+                    {isExpiringSoon(row.issue_date) && <AlertTriangle size={12} className="inline ml-1 text-warning" />}
+                  </TableCell>
+                  <TableCell>{statusBadge(row.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" onClick={() => setInspectItem(row)}><Eye size={14} /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(row)}><Pencil size={14} /></Button>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(row.id)}><Trash2 size={14} /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {filtered.length > PAGE_SIZE && (
+            <div className="p-3 border-t flex items-center justify-between text-sm text-muted-foreground">
+              <span>Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={14} /></Button>
+                <span className="text-foreground font-medium">Page {page}/{totalPages}</span>
+                <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight size={14} /></Button>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </CardContent>
+      </Card>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr>{columns.map(col => <th key={col} className="data-table-header px-4 py-3 text-left whitespace-nowrap">{col}</th>)}</tr></thead>
-            <tbody>
-              {isLoading ? (
-                <tr><td colSpan={10} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
-              ) : pageData.length === 0 ? (
-                <tr><td colSpan={10} className="text-center py-16"><Database size={40} className="mx-auto text-muted-foreground/40 mb-3" /><p className="font-semibold text-foreground">No Aircraft Found</p></td></tr>
-              ) : pageData.map(row => (
-                <tr key={row.id} className="data-table-row">
-                  {editingId === row.id ? (
-                    <>
-                      <td className="px-4 py-2"><input value={editRow.registration || ""} onChange={e => setEditRow(p => ({ ...p, registration: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-24 bg-card text-foreground" /></td>
-                      <td className="px-4 py-2"><input value={editRow.type || ""} onChange={e => setEditRow(p => ({ ...p, type: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-24 bg-card text-foreground" /></td>
-                      <td className="px-4 py-2"><input value={editRow.airline || ""} onChange={e => setEditRow(p => ({ ...p, airline: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-full bg-card text-foreground" /></td>
-                      <td className="px-4 py-2"><input value={editRow.model || ""} onChange={e => setEditRow(p => ({ ...p, model: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-full bg-card text-foreground" /></td>
-                      <td className="px-4 py-2"><input type="number" step="0.1" value={editRow.mtow || 0} onChange={e => setEditRow(p => ({ ...p, mtow: +e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-24 bg-card text-foreground" /></td>
-                      <td className="px-4 py-2"><input type="number" value={editRow.seats || 0} onChange={e => setEditRow(p => ({ ...p, seats: +e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-16 bg-card text-foreground" /></td>
-                      <td className="px-4 py-2"><input value={editRow.certificate_no || ""} onChange={e => setEditRow(p => ({ ...p, certificate_no: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-28 bg-card text-foreground" /></td>
-                      <td className="px-4 py-2"><input type="date" value={editRow.issue_date || ""} onChange={e => setEditRow(p => ({ ...p, issue_date: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 w-32 bg-card text-foreground" /></td>
-                      <td className="px-4 py-2">
-                        <select value={editRow.status} onChange={e => setEditRow(p => ({ ...p, status: e.target.value }))} className="text-sm border rounded px-1.5 py-0.5 bg-card text-foreground">
-                          <option>Operational</option><option>Maintenance</option><option>Grounded</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-2 flex gap-1">
-                        <button onClick={saveEdit} className="text-xs text-success hover:underline">Save</button>
-                        <button onClick={() => setEditingId(null)} className="text-xs text-destructive hover:underline">Cancel</button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-4 py-2.5 text-foreground font-mono font-semibold">{row.registration}</td>
-                      <td className="px-4 py-2.5 text-foreground">{row.type}</td>
-                      <td className="px-4 py-2.5 text-foreground">{row.airline}</td>
-                      <td className="px-4 py-2.5 text-foreground">{row.model}</td>
-                      <td className="px-4 py-2.5 text-foreground">{row.mtow}</td>
-                      <td className="px-4 py-2.5 text-foreground">{row.seats}</td>
-                      <td className="px-4 py-2.5 text-foreground font-mono">{row.certificate_no}</td>
-                      <td className="px-4 py-2.5 text-foreground">{row.issue_date}</td>
-                      <td className="px-4 py-2.5">{statusBadge(row.status)}</td>
-                      <td className="px-4 py-2.5 flex gap-2">
-                        <button onClick={() => startEdit(row)} className="text-info hover:text-info/80"><Pencil size={14} /></button>
-                        <button onClick={() => deleteRow(row.id)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button>
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filtered.length > 0 && (
-          <div className="p-3 border-t flex items-center justify-between text-sm text-muted-foreground">
-            <span>Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}</span>
-            <div className="flex items-center gap-2">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="p-1.5 rounded border hover:bg-muted disabled:opacity-40"><ChevronLeft size={14} /></button>
-              <span className="text-foreground font-medium">Page {page} of {totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="p-1.5 rounded border hover:bg-muted disabled:opacity-40"><ChevronRight size={14} /></button>
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader><DialogTitle>{editItem ? "Edit Aircraft" : "Add Aircraft"}</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Registration</label><Input placeholder="SU-GEA" value={form.registration} onChange={e => setForm({ ...form, registration: e.target.value.toUpperCase() })} /></div>
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Type</label><Input placeholder="NB / WB" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} /></div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Airline</label><Input value={form.airline} onChange={e => setForm({ ...form, airline: e.target.value })} /></div>
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Model</label><Input placeholder="B737-800" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">MTOW (Tonnes)</label><Input type="number" step="0.1" value={form.mtow} onChange={e => setForm({ ...form, mtow: +e.target.value })} /></div>
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Seats</label><Input type="number" value={form.seats} onChange={e => setForm({ ...form, seats: +e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Certificate No.</label><Input value={form.certificate_no} onChange={e => setForm({ ...form, certificate_no: e.target.value })} /></div>
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Issue Date</label><Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} /></div>
+            </div>
+            <div><label className="text-sm font-medium text-foreground mb-1 block">Status</label>
+              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="Operational">Operational</SelectItem><SelectItem value="Maintenance">Maintenance</SelectItem><SelectItem value="Grounded">Grounded</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={handleSave}>{editItem ? "Update Aircraft" : "Add Aircraft"}</Button>
           </div>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Inspector Modal */}
+      <Dialog open={!!inspectItem} onOpenChange={() => setInspectItem(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><PlaneTakeoff size={18} /> Aircraft Details</DialogTitle></DialogHeader>
+          {inspectItem && (
+            <Tabs defaultValue="overview" className="mt-2">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="technical">Technical</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview" className="space-y-4 pt-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg font-bold font-mono text-primary">{inspectItem.registration}</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">{inspectItem.model}</h3>
+                    <p className="text-sm text-muted-foreground">{inspectItem.airline} · {inspectItem.type}</p>
+                  </div>
+                  {statusBadge(inspectItem.status)}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-muted/50 rounded-lg p-3"><div className="text-xs text-muted-foreground mb-1">MTOW</div><div className="text-lg font-bold text-foreground">{inspectItem.mtow}T</div></div>
+                  <div className="bg-muted/50 rounded-lg p-3"><div className="text-xs text-muted-foreground mb-1">Seats</div><div className="text-lg font-bold text-foreground">{inspectItem.seats}</div></div>
+                  <div className="bg-muted/50 rounded-lg p-3"><div className="text-xs text-muted-foreground mb-1">Type</div><div className="text-lg font-bold text-foreground">{inspectItem.type || "—"}</div></div>
+                </div>
+              </TabsContent>
+              <TabsContent value="technical" className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Certificate No.</div>
+                    <div className="text-sm font-bold font-mono text-foreground">{inspectItem.certificate_no || "—"}</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Calendar size={12} /> Issue Date</div>
+                    <div className="text-sm font-bold text-foreground">{inspectItem.issue_date || "—"}</div>
+                    {isExpiringSoon(inspectItem.issue_date) && <div className="text-xs text-warning mt-1 flex items-center gap-1"><AlertTriangle size={10} /> Expiring soon</div>}
+                  </div>
+                </div>
+                <div className="border rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-foreground mb-2">Quick Actions</h4>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => { setInspectItem(null); navigate("/flight-schedule"); }}><Plane size={14} className="mr-1" /> View Flights</Button>
+                    <Button size="sm" variant="outline" onClick={() => { setInspectItem(null); openEdit(inspectItem); }}><Pencil size={14} className="mr-1" /> Edit Aircraft</Button>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
