@@ -158,14 +158,14 @@ export default function InvoiceDetailModal({ invoice: inv, onClose, onEdit, onFi
         </div>
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 bg-card border-t px-6 py-4 flex gap-3 justify-between rounded-b-xl">
-          <button onClick={onClose} className="toolbar-btn-outline">Close</button>
-          <div className="flex gap-2">
+        <div className="sticky bottom-0 bg-card border-t px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-between rounded-b-xl">
+          <button onClick={onClose} className="toolbar-btn-outline w-full sm:w-auto">Close</button>
+          <div className="flex gap-2 flex-wrap">
             {inv.invoice_type !== "Final" && (
-              <button onClick={() => { onClose(); onFinalize(inv); }} className="toolbar-btn-success flex items-center gap-1.5"><ShieldCheck size={14} /> Finalize</button>
+              <button onClick={() => { onClose(); onFinalize(inv); }} className="toolbar-btn-success flex items-center gap-1.5 flex-1 sm:flex-none justify-center"><ShieldCheck size={14} /> Finalize</button>
             )}
-            <button onClick={() => { onClose(); onPrint(inv); }} className="toolbar-btn-outline flex items-center gap-1.5"><Printer size={14} /> Print</button>
-            <button onClick={() => { onClose(); onEdit(inv); }} className="toolbar-btn-primary flex items-center gap-1.5"><FileText size={14} /> Edit</button>
+            <button onClick={() => { onClose(); onPrint(inv); }} className="toolbar-btn-outline flex items-center gap-1.5 flex-1 sm:flex-none justify-center"><Printer size={14} /> Print</button>
+            <button onClick={() => { onClose(); onEdit(inv); }} className="toolbar-btn-primary flex items-center gap-1.5 flex-1 sm:flex-none justify-center"><FileText size={14} /> Edit</button>
           </div>
         </div>
       </div>
