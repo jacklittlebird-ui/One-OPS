@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Plane, Calculator, FileText, Utensils, DollarSign,
   Shield, AlertTriangle, MoreHorizontal, ChevronDown, ChevronRight, FileBarChart2,
-  ShieldCheck, Users, Bell
+  ShieldCheck, Users, Bell, Settings
 } from "lucide-react";
 
 interface NavChild {
