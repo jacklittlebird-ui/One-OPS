@@ -42,6 +42,7 @@ import FinancialReportsPage from "./pages/FinancialReports";
 import VendorInvoicesPage from "./pages/VendorInvoices";
 import AgingReportsPage from "./pages/AgingReports";
 import AirlineIncentivesPage from "./pages/AirlineIncentives";
+import UsersPage from "./pages/Users";
 
 const queryClient = new QueryClient();
 
