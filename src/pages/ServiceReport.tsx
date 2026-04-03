@@ -374,7 +374,7 @@ function ReportForm({ data, onChange, onSave, onCancel, title }: ReportFormProps
                 <FormField label={`DLY Code ${i + 1}`}>
                   <select className={selectCls} value={d.code} onChange={e => setDelay(i, "code", e.target.value)}>
                     <option value="">— Select —</option>
-                    {sampleDelayCodes.map(dc => (
+                    {delayCodes.filter(dc => dc.active).map(dc => (
                       <option key={dc.id} value={dc.code}>{dc.code} – {dc.description.slice(0, 40)}</option>
                     ))}
                   </select>
