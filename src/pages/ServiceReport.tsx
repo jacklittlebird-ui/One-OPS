@@ -270,6 +270,8 @@ interface ReportFormProps {
 }
 
 function ReportForm({ data, onChange, onSave, onCancel, title }: ReportFormProps) {
+  type DelayCodeRow = { id: string; code: string; description: string; category: string; responsible: string; impact_level: string; avg_minutes: number; active: boolean };
+  const { data: delayCodes } = useSupabaseTable<DelayCodeRow>("delay_codes", { orderBy: "code", ascending: true });
   const recalcFinancials = (d: Partial<ReportFormData>) => {
     d.civilAviationFee = calcCivilAviation(d);
     d.airportCharge = getAirportCharge(d);
