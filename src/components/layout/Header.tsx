@@ -117,7 +117,7 @@ export default function Header() {
       </div>
 
       {/* Logout */}
-      <button className="p-2 rounded-full hover:bg-muted transition-colors">
+      <button onClick={() => signOut()} className="p-2 rounded-full hover:bg-muted transition-colors">
         <LogOut size={18} className="text-muted-foreground" />
       </button>
     </header>
