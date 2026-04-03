@@ -7,8 +7,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { sampleDelayCodes } from "@/data/delayCodesData";
 import { generateAllCharges } from "@/data/airportChargesData";
+import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
 import { toast } from "@/hooks/use-toast";
 import { Constants } from "@/integrations/supabase/types";
 
