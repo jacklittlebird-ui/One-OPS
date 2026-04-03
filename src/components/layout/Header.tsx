@@ -93,9 +93,13 @@ export default function Header() {
       </div>
 
       {/* Notifications */}
-      <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+      <button onClick={() => navigate("/notifications")} className="relative p-2 rounded-full hover:bg-muted transition-colors">
         <Bell size={18} className="text-muted-foreground" />
-        <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-accent text-[10px] font-bold flex items-center justify-center text-accent-foreground">3</span>
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-accent text-[10px] font-bold flex items-center justify-center text-accent-foreground">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Settings */}
