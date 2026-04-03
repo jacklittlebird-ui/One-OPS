@@ -149,7 +149,7 @@ export default function ServiceProvidersPage() {
       Contract: p.contract_ref,
       Status: p.status,
     }));
-    exportToExcel(rows, "Service_Providers");
+    exportToExcel(rows, "Providers", "Service_Providers.xlsx");
   };
 
   const handleDelete = async (id: string) => {
