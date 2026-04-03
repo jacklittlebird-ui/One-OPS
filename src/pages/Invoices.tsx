@@ -533,11 +533,11 @@ export default function InvoicesPage() {
       {printInvoice && <InvoicePrintView invoice={printInvoice} onClose={() => setPrintInvoice(null)} />}
       {detailInvoice && (
         <InvoiceDetailModal
-          invoice={detailInvoice}
+          invoice={detailInvoice as any}
           onClose={() => setDetailInvoice(null)}
-          onEdit={startEdit}
-          onFinalize={handleFinalize}
-          onPrint={(inv) => setPrintInvoice(toPrintFormat(inv))}
+          onEdit={(inv) => startEdit(inv as any)}
+          onFinalize={(inv) => handleFinalize(inv as any)}
+          onPrint={(inv) => setPrintInvoice(toPrintFormat(inv as any))}
         />
       )}
     </div>
