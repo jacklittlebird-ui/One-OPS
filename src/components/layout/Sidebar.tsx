@@ -102,7 +102,11 @@ const navSections: NavSection[] = [
 ];
 
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation();
   const currentPath = location.pathname;
   
