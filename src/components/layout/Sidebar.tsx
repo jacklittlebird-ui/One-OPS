@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Plane, Calculator, FileText, Utensils, DollarSign,
   Shield, AlertTriangle, MoreHorizontal, ChevronDown, ChevronRight, FileBarChart2,
-  ShieldCheck, Users
+  ShieldCheck, Users, Bell
 } from "lucide-react";
 
 interface NavChild {
@@ -89,6 +89,9 @@ const navSections: NavSection[] = [
       { label: "Abbreviations", path: "/abbreviations" },
       { label: "Aircraft Types", path: "/aircraft-types" },
     ],
+  },
+  {
+    label: "NOTIFICATIONS", icon: <Bell size={18} />, path: "/notifications",
   },
   {
     label: "USERS", icon: <Users size={18} />, path: "/users",

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Settings, LogOut, ChevronDown, Monitor, Code2, Server, TestTube, Moon, Sun } from "lucide-react";
 import GlobalSearch from "@/components/GlobalSearch";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 type Role = "UI/UX" | "Front-End" | "Back-End" | "Tester";
 
 const roleConfig: Record<Role, { icon: React.ReactNode; color: string }> = {
@@ -11,9 +14,30 @@ const roleConfig: Record<Role, { icon: React.ReactNode; color: string }> = {
 };
 
 export default function Header() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [role, setRole] = useState<Role>("UI/UX");
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+      setUnreadCount(count ?? 0);
+    };
+    fetchUnread();
+    const channel = supabase
+      .channel("header-notifications")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchUnread())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   useEffect(() => {
     if (dark) {
@@ -69,9 +93,13 @@ export default function Header() {
       </div>
 
       {/* Notifications */}
-      <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+      <button onClick={() => navigate("/notifications")} className="relative p-2 rounded-full hover:bg-muted transition-colors">
         <Bell size={18} className="text-muted-foreground" />
-        <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-accent text-[10px] font-bold flex items-center justify-center text-accent-foreground">3</span>
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-accent text-[10px] font-bold flex items-center justify-center text-accent-foreground">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Settings */}
@@ -89,7 +117,7 @@ export default function Header() {
       </div>
 
       {/* Logout */}
-      <button className="p-2 rounded-full hover:bg-muted transition-colors">
+      <button onClick={() => signOut()} className="p-2 rounded-full hover:bg-muted transition-colors">
         <LogOut size={18} className="text-muted-foreground" />
       </button>
     </header>
