@@ -160,6 +160,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
                       <Link
                         key={child.label}
                         to={child.path}
+                        onClick={onNavigate}
                         className={`block px-3 py-1.5 rounded text-sm transition-colors ${
                           isActive(child.path)
                             ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
