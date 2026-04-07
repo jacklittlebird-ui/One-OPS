@@ -422,7 +422,7 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                       </select>
                     </FormField>
                     <FormField label="Min">
-                      <input type="number" className={inputCls} value={d.timing || 0} onChange={e => setDelay(i, "timing", +e.target.value)} />
+                      <input type="number" className={inputCls} value={d.timing || ""} onChange={e => setDelay(i, "timing", +e.target.value)} />
                     </FormField>
                     <FormField label="Explanation">
                       <input className={readOnlyCls} value={d.explanation} readOnly />
