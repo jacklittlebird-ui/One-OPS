@@ -995,12 +995,8 @@ export default function ServiceReportPage() {
                     </div>
                   </td>
                 </tr>
-                      )}
-                      <button onClick={() => startEdit(r)} className="text-info hover:text-info/80"><Pencil size={13} /></button>
-                      <button onClick={() => deleteReport(r.id!)} className="text-destructive hover:text-destructive/80"><Trash2 size={13} /></button>
-                    </div>
-                  </td>
-                </tr>
+              ))}
+            </tbody>
               ))}
             </tbody>
           </table>
