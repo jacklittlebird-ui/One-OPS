@@ -151,7 +151,8 @@ export default function ClearancesPage() {
         let count = 0;
         for (const fDate of flightDates) {
           await add(buildPayload({
-            requested_date: fDate,
+            arrival_date: fDate,
+            departure_date: fDate,
             no_of_flights: 1,
           }));
           count++;
