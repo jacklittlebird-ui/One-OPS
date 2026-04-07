@@ -39,6 +39,8 @@ function calcNoOfFlights(periodFrom: string, periodTo: string, weekDays: string)
 }
 
 export default function ClearanceFormDialog({ open, onOpenChange, form, setForm, airlines, isEdit, onSave }: Props) {
+  const [airlineOpen, setAirlineOpen] = useState(false);
+  const [stationOpen, setStationOpen] = useState(false);
   const { data: airports } = useQuery({
     queryKey: ["airports-iata"],
     queryFn: async () => {
