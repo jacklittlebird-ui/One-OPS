@@ -1,9 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ChevronsUpDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CLEARANCE_TYPES, SKD_TYPES, HANDLING_OPTIONS } from "./ClearanceTypes";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +39,8 @@ function calcNoOfFlights(periodFrom: string, periodTo: string, weekDays: string)
 }
 
 export default function ClearanceFormDialog({ open, onOpenChange, form, setForm, airlines, isEdit, onSave }: Props) {
+  const [airlineOpen, setAirlineOpen] = useState(false);
+  const [stationOpen, setStationOpen] = useState(false);
   const { data: airports } = useQuery({
     queryKey: ["airports-iata"],
     queryFn: async () => {
@@ -67,22 +73,65 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground">Account (Airline)</label>
-              <Select value={form.airline_id || "none"} onValueChange={v => setForm({ ...form, airline_id: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="Select Airline" /></SelectTrigger>
-                <SelectContent><SelectItem value="none">No Airline</SelectItem>{(airlines || []).map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.code})</SelectItem>)}</SelectContent>
-              </Select>
+              <Popover open={airlineOpen} onOpenChange={setAirlineOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={airlineOpen} className="w-full justify-between font-normal">
+                    {form.airline_id ? (airlines || []).find((a: any) => a.id === form.airline_id)?.name || "Select Airline" : "Select Airline"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search airline..." />
+                    <CommandList>
+                      <CommandEmpty>No airline found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem onSelect={() => { setForm({ ...form, airline_id: "" }); setAirlineOpen(false); }}>
+                          <Check className={cn("mr-2 h-4 w-4", !form.airline_id ? "opacity-100" : "opacity-0")} />
+                          No Airline
+                        </CommandItem>
+                        {(airlines || []).map((a: any) => (
+                          <CommandItem key={a.id} value={`${a.name} ${a.code}`} onSelect={() => { setForm({ ...form, airline_id: a.id }); setAirlineOpen(false); }}>
+                            <Check className={cn("mr-2 h-4 w-4", form.airline_id === a.id ? "opacity-100" : "opacity-0")} />
+                            {a.name} ({a.code})
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Station</label>
-              <Select value={form.authority || "none"} onValueChange={v => setForm({ ...form, authority: v === "none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="Select Station" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  {(airports || []).map((a: any) => (
-                    <SelectItem key={a.id} value={a.iata_code}>{a.iata_code} — {a.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={stationOpen} onOpenChange={setStationOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={stationOpen} className="w-full justify-between font-normal">
+                    {form.authority || "Select Station"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search station..." />
+                    <CommandList>
+                      <CommandEmpty>No station found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem onSelect={() => { setForm({ ...form, authority: "" }); setStationOpen(false); }}>
+                          <Check className={cn("mr-2 h-4 w-4", !form.authority ? "opacity-100" : "opacity-0")} />
+                          —
+                        </CommandItem>
+                        {(airports || []).map((a: any) => (
+                          <CommandItem key={a.id} value={`${a.iata_code} ${a.name}`} onSelect={() => { setForm({ ...form, authority: a.iata_code }); setStationOpen(false); }}>
+                            <Check className={cn("mr-2 h-4 w-4", form.authority === a.iata_code ? "opacity-100" : "opacity-0")} />
+                            {a.iata_code} — {a.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
