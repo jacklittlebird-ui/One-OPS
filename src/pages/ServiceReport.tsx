@@ -889,34 +889,42 @@ export default function ServiceReportPage() {
                   </td>
                 </tr>
               ) : pageData.map((r, i) => (
-                <tr key={r.id} className="data-table-row">
+                <tr key={r.id || `fs-${r.flightScheduleId}-${i}`} className={`data-table-row ${!r.isLinked ? "bg-muted/30" : ""}`}>
                   <td className="px-3 py-2.5 text-muted-foreground text-xs">{(page - 1) * PAGE_SIZE + i + 1}</td>
                   <td className="px-3 py-2.5 font-semibold text-foreground whitespace-nowrap">{r.operator}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-foreground">{r.flightNo}</td>
                   <td className="px-3 py-2.5">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusColor[r.handlingType] || "bg-muted text-muted-foreground"}`}>
-                      {r.handlingType}
-                    </span>
+                    {r.isLinked ? (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusColor[r.handlingType] || "bg-muted text-muted-foreground"}`}>
+                        {r.handlingType}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground">—</span>
+                    )}
                   </td>
-                  <td className="px-3 py-2.5 text-foreground">{r.station}</td>
+                  <td className="px-3 py-2.5 text-foreground">{r.isLinked ? r.station : "—"}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{r.route}</td>
-                  <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.arrivalDate}</td>
+                  <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.arrivalDate || "—"}</td>
                   <td className="px-3 py-2.5 text-foreground">{r.aircraftType}</td>
-                  <td className="px-3 py-2.5 text-foreground">{r.mtow}</td>
+                  <td className="px-3 py-2.5 text-foreground">{r.isLinked ? r.mtow : "—"}</td>
                   <td className="px-3 py-2.5 text-center">
-                    {(() => { const dn = autoDayNight(r.td, r.arrivalDate); return (
+                    {r.isLinked ? (() => { const dn = autoDayNight(r.td, r.arrivalDate); return (
                       <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${dn === "N" ? "bg-info/15 text-info" : "bg-warning/15 text-warning"}`}>
                         {dn}
                       </span>
-                    ); })()}
+                    ); })() : "—"}
                   </td>
-                  <td className="px-3 py-2.5 text-foreground">{r.paxInAdultI + r.paxInInfI + r.paxInAdultD + r.paxInInfD}</td>
+                  <td className="px-3 py-2.5 text-foreground">{r.isLinked ? r.paxInAdultI + r.paxInInfI + r.paxInAdultD + r.paxInInfD : "—"}</td>
                   <td className="px-3 py-2.5 text-foreground">
-                    {r.delays && r.delays.length > 0 ? r.delays.map(d => d.code).join("/") : "—"}
+                    {r.isLinked && r.delays && r.delays.length > 0 ? r.delays.map(d => d.code).join("/") : "—"}
                   </td>
-                  <td className="px-3 py-2.5 font-semibold text-success">{r.totalCost.toLocaleString()}</td>
+                  <td className="px-3 py-2.5 font-semibold text-success">{r.isLinked ? r.totalCost.toLocaleString() : "—"}</td>
                   <td className="px-3 py-2.5">
-                    {(() => {
+                    {!r.isLinked ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground">
+                        <AlertCircle size={11} />Incomplete
+                      </span>
+                    ) : (() => {
                       const cfg: Record<string, { icon: React.ReactNode; cls: string }> = {
                         pending: { icon: <Clock size={11} />, cls: "bg-warning/15 text-warning" },
                         approved: { icon: <CheckCircle2 size={11} />, cls: "bg-success/15 text-success" },
@@ -932,32 +940,61 @@ export default function ServiceReportPage() {
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-1.5">
-                      {r.reviewStatus === "pending" && (
+                      {!r.isLinked ? (
+                        <button
+                          onClick={() => {
+                            setNewReport({
+                              ...emptyReport(),
+                              flightNo: r.flightNo,
+                              operator: r.operator,
+                              aircraftType: r.aircraftType,
+                              route: r.route,
+                              sta: r.sta,
+                              std: r.std,
+                            });
+                            setShowAdd(true);
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                          title="Complete Service Report"
+                        >
+                          <Pencil size={12} /> Complete
+                        </button>
+                      ) : (
                         <>
-                          <button onClick={async () => {
-                            await supabase.from("service_reports").update({ review_status: "approved", reviewed_by: "Operations", reviewed_at: new Date().toISOString() } as any).eq("id", r.id);
-                            queryClient.invalidateQueries({ queryKey: ["service_reports"] });
-                            toast({ title: "✅ Approved" });
-                          }} className="text-success hover:text-success/80" title="Approve"><CheckCircle2 size={13} /></button>
-                          <button onClick={async () => {
-                            const comment = prompt("Rejection reason:");
-                            if (comment === null) return;
-                            await supabase.from("service_reports").update({ review_status: "rejected", review_comment: comment, reviewed_by: "Operations", reviewed_at: new Date().toISOString() } as any).eq("id", r.id);
-                            queryClient.invalidateQueries({ queryKey: ["service_reports"] });
-                            toast({ title: "❌ Rejected", description: comment });
-                          }} className="text-destructive hover:text-destructive/80" title="Reject"><XCircle size={13} /></button>
+                          {r.reviewStatus === "pending" && (
+                            <>
+                              <button onClick={async () => {
+                                await supabase.from("service_reports").update({ review_status: "approved", reviewed_by: "Operations", reviewed_at: new Date().toISOString() } as any).eq("id", r.id);
+                                queryClient.invalidateQueries({ queryKey: ["service_reports"] });
+                                toast({ title: "✅ Approved" });
+                              }} className="text-success hover:text-success/80" title="Approve"><CheckCircle2 size={13} /></button>
+                              <button onClick={async () => {
+                                const comment = prompt("Rejection reason:");
+                                if (comment === null) return;
+                                await supabase.from("service_reports").update({ review_status: "rejected", review_comment: comment, reviewed_by: "Operations", reviewed_at: new Date().toISOString() } as any).eq("id", r.id);
+                                queryClient.invalidateQueries({ queryKey: ["service_reports"] });
+                                toast({ title: "❌ Rejected", description: comment });
+                              }} className="text-destructive hover:text-destructive/80" title="Reject"><XCircle size={13} /></button>
+                            </>
+                          )}
+                          {r.reviewStatus === "approved" && (
+                            <button onClick={() => {
+                              const params = new URLSearchParams({
+                                operator: r.operator, flightRef: r.flightNo,
+                                description: `${r.handlingType} – ${r.route}`,
+                                civilAviation: String(r.civilAviationFee), handling: String(r.handlingFee),
+                                airportCharges: String(r.airportCharge),
+                              });
+                              navigate(`/invoices?${params.toString()}`);
+                            }} className="text-success hover:text-success/80" title="Generate Invoice"><Receipt size={13} /></button>
+                          )}
+                          <button onClick={() => startEdit(r)} className="text-info hover:text-info/80"><Pencil size={13} /></button>
+                          <button onClick={() => deleteReport(r.id!)} className="text-destructive hover:text-destructive/80"><Trash2 size={13} /></button>
                         </>
                       )}
-                      {r.reviewStatus === "approved" && (
-                        <button onClick={() => {
-                          const params = new URLSearchParams({
-                            operator: r.operator, flightRef: r.flightNo,
-                            description: `${r.handlingType} – ${r.route}`,
-                            civilAviation: String(r.civilAviationFee), handling: String(r.handlingFee),
-                            airportCharges: String(r.airportCharge),
-                          });
-                          navigate(`/invoices?${params.toString()}`);
-                        }} className="text-success hover:text-success/80" title="Generate Invoice"><Receipt size={13} /></button>
+                    </div>
+                  </td>
+                </tr>
                       )}
                       <button onClick={() => startEdit(r)} className="text-info hover:text-info/80"><Pencil size={13} /></button>
                       <button onClick={() => deleteReport(r.id!)} className="text-destructive hover:text-destructive/80"><Trash2 size={13} /></button>
