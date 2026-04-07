@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import {
   FileBarChart2, X, Plane, Clock, Users, DollarSign, UtensilsCrossed,
-  BedDouble, Fuel, Plus, Trash2, Building2
+  BedDouble, Fuel, Plus, Trash2, Building2, CalendarIcon
 } from "lucide-react";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
 import { Constants } from "@/integrations/supabase/types";
@@ -10,6 +11,10 @@ import {
   CateringLineItem, HotacLineItem, FuelLineItem, DelayEntry
 } from "./ReportFormTypes";
 import { generateAllCharges } from "@/data/airportChargesData";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const handlingTypes = Constants.public.Enums.handling_type;
 const currencyOptions = ["USD", "EUR", "EGP"] as const;
@@ -34,6 +39,81 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</label>
       {children}
     </div>
+  );
+}
+
+/** Convert ISO string (yyyy-mm-dd) to Date or undefined */
+function toDate(val: string | null | undefined): Date | undefined {
+  if (!val) return undefined;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+/** Convert Date to ISO string (yyyy-mm-dd) for storage */
+function toISO(d: Date | undefined): string {
+  if (!d) return "";
+  return format(d, "yyyy-MM-dd");
+}
+
+/** Display date as DD/MM/YYYY */
+function displayDate(val: string | null | undefined): string {
+  if (!val) return "";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "";
+  return format(d, "dd/MM/yyyy");
+}
+
+function DatePickerField({ label, value, onChange, readOnly }: { label: string; value: string; onChange: (v: string) => void; readOnly?: boolean }) {
+  const [open, setOpen] = useState(false);
+  if (readOnly) {
+    return (
+      <FormField label={label}>
+        <input className={readOnlyCls} value={displayDate(value)} readOnly />
+      </FormField>
+    );
+  }
+  return (
+    <FormField label={label}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm h-[38px]", !value && "text-muted-foreground")}>
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {value ? displayDate(value) : "DD/MM/YYYY"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={toDate(value)}
+            onSelect={(d) => { onChange(toISO(d)); setOpen(false); }}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
+    </FormField>
+  );
+}
+
+function TimeField({ label, value, onChange, readOnly }: { label: string; value: string; onChange?: (v: string) => void; readOnly?: boolean }) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!onChange) return;
+    let v = e.target.value.replace(/[^0-9:]/g, "");
+    if (v.length === 2 && !v.includes(":") && (value || "").length !== 3) v += ":";
+    if (v.length > 5) v = v.slice(0, 5);
+    onChange(v);
+  };
+  return (
+    <FormField label={label}>
+      <input
+        className={readOnly ? readOnlyCls : inputCls}
+        value={value || ""}
+        onChange={handleChange}
+        readOnly={readOnly}
+        placeholder="HH:MM"
+        maxLength={5}
+      />
+    </FormField>
   );
 }
 
@@ -291,14 +371,14 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                     </select>
                   </FormField>
                   <FormField label="Route"><input className={inputCls} value={data.route || ""} onChange={e => set("route", e.target.value)} placeholder="ORY/CAI/ORY" /></FormField>
-                  <FormField label="Reg No"><input className={inputCls} value={data.registration || ""} onChange={e => set("registration", e.target.value)} placeholder="FGZHM" /></FormField>
-                  <FormField label="A/C Type"><input className={inputCls} value={data.aircraftType || ""} onChange={e => set("aircraftType", e.target.value)} placeholder="B737-800" /></FormField>
-                  <FormField label="MTOW"><input className={inputCls} value={data.mtow || ""} onChange={e => set("mtow", e.target.value)} placeholder="77" /></FormField>
+                  <FormField label="Reg No"><input className={inputCls} value={data.registration || ""} onChange={e => set("registration", e.target.value)} /></FormField>
+                  <FormField label="A/C Type"><input className={inputCls} value={data.aircraftType || ""} onChange={e => set("aircraftType", e.target.value)} /></FormField>
+                  <FormField label="MTOW"><input className={inputCls} value={data.mtow || ""} onChange={e => set("mtow", e.target.value)} /></FormField>
                   <FormField label="Config"><input type="number" className={inputCls} value={data.paxInAdultI || ""} onChange={e => set("paxInAdultI", +e.target.value)} /></FormField>
-                  <FormField label="STA"><input type="time" className={inputCls} value={data.sta || ""} onChange={e => set("sta", e.target.value)} /></FormField>
-                  <FormField label="STD"><input type="time" className={inputCls} value={data.std || ""} onChange={e => set("std", e.target.value)} /></FormField>
-                  <FormField label="Arrival Date"><input type="date" className={inputCls} value={data.arrivalDate || ""} onChange={e => set("arrivalDate", e.target.value)} /></FormField>
-                  <FormField label="Departure Date"><input type="date" className={inputCls} value={data.departureDate || ""} onChange={e => set("departureDate", e.target.value)} /></FormField>
+                  <TimeField label="STA" value={data.sta || ""} onChange={v => set("sta", v)} />
+                  <TimeField label="STD" value={data.std || ""} onChange={v => set("std", v)} />
+                  <DatePickerField label="Arrival Date" value={data.arrivalDate || ""} onChange={v => set("arrivalDate", v)} />
+                  <DatePickerField label="Departure Date" value={data.departureDate || ""} onChange={v => set("departureDate", v)} />
                   <FormField label="Handling Type">
                     <select className={selectCls} value={data.handlingType} onChange={e => set("handlingType", e.target.value)}>
                       {handlingTypes.map(h => <option key={h}>{h}</option>)}
@@ -317,8 +397,8 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
               <div>
                 <h3 className="text-sm font-bold text-accent uppercase tracking-wider mb-3">Services & Tags</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <FormField label="Project Tags"><input className={inputCls} value={data.projectTags || ""} onChange={e => set("projectTags", e.target.value)} placeholder="AVSEC, Full Handling…" /></FormField>
-                  <FormField label="Check-In System"><input className={inputCls} value={data.checkInSystem || ""} onChange={e => set("checkInSystem", e.target.value)} placeholder="Amadeus" /></FormField>
+                  <FormField label="Project Tags"><input className={inputCls} value={data.projectTags || ""} onChange={e => set("projectTags", e.target.value)} /></FormField>
+                  <FormField label="Check-In System"><input className={inputCls} value={data.checkInSystem || ""} onChange={e => set("checkInSystem", e.target.value)} /></FormField>
                 </div>
               </div>
             </div>
@@ -378,14 +458,14 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
               <div>
                 <h3 className="text-sm font-bold text-info uppercase tracking-wider mb-3 flex items-center gap-2"><Clock size={14} />Aircraft Movement Timings</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <FormField label="Touch Down (T/D)"><input type="time" className={inputCls} value={data.td || ""} onChange={e => set("td", e.target.value)} /></FormField>
-                  <FormField label="Chocks On (C/O)"><input type="time" className={inputCls} value={data.co || ""} onChange={e => set("co", e.target.value)} /></FormField>
-                  <FormField label="Chocks Off (O/B)"><input type="time" className={inputCls} value={data.ob || ""} onChange={e => set("ob", e.target.value)} /></FormField>
-                  <FormField label="Take Off (T/O)"><input type="time" className={inputCls} value={data.to || ""} onChange={e => set("to", e.target.value)} /></FormField>
-                  <FormField label="ATA (Actual Arrival)"><input type="time" className={inputCls} value={data.ata || ""} onChange={e => set("ata", e.target.value)} /></FormField>
-                  <FormField label="ATD (Actual Departure)"><input type="time" className={inputCls} value={data.atd || ""} onChange={e => set("atd", e.target.value)} /></FormField>
-                  <FormField label="STA (Read-Only)"><input className={readOnlyCls} value={data.sta || ""} readOnly /></FormField>
-                  <FormField label="STD (Read-Only)"><input className={readOnlyCls} value={data.std || ""} readOnly /></FormField>
+                  <TimeField label="Touch Down (T/D)" value={data.td || ""} onChange={v => set("td", v)} />
+                  <TimeField label="Chocks On (C/O)" value={data.co || ""} onChange={v => set("co", v)} />
+                  <TimeField label="Chocks Off (O/B)" value={data.ob || ""} onChange={v => set("ob", v)} />
+                  <TimeField label="Take Off (T/O)" value={data.to || ""} onChange={v => set("to", v)} />
+                  <TimeField label="ATA (Actual Arrival)" value={data.ata || ""} onChange={v => set("ata", v)} />
+                  <TimeField label="ATD (Actual Departure)" value={data.atd || ""} onChange={v => set("atd", v)} />
+                  <TimeField label="STA (Read-Only)" value={data.sta || ""} readOnly />
+                  <TimeField label="STD (Read-Only)" value={data.std || ""} readOnly />
                 </div>
               </div>
               <div>
@@ -446,7 +526,7 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="MTOW (Tons)"><input className={readOnlyCls} value={data.mtow || ""} readOnly /></FormField>
                   <FormField label="Station"><input className={readOnlyCls} value={data.station || ""} readOnly /></FormField>
                   <FormField label="Route"><input className={readOnlyCls} value={data.route || ""} readOnly /></FormField>
-                  <FormField label="Departure Date"><input className={readOnlyCls} value={data.departureDate || ""} readOnly /></FormField>
+                  <DatePickerField label="Departure Date" value={data.departureDate || ""} onChange={() => {}} readOnly />
                 </div>
               </div>
               <div>
