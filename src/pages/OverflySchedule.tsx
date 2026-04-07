@@ -114,8 +114,39 @@ export default function OverflySchedulePage() {
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="text" placeholder="Search…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="pl-8 pr-3 py-1.5 text-sm border rounded bg-card text-foreground placeholder:text-muted-foreground w-52 focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
+          <select value={operatorFilter} onChange={e => { setOperatorFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
+            <option value="All">All Operators</option>
+            {operators.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
           <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
             <option>All</option><option>Approved</option><option>Pending</option><option>Rejected</option><option>Expired</option><option>Cancelled</option>
+          </select>
+          <div className="flex items-center gap-1.5">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-8 text-xs font-normal", !dateFrom && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                  {dateFrom ? format(new Date(dateFrom), "dd/MM/yyyy") : "From"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                <Calendar mode="single" selected={dateFrom ? new Date(dateFrom) : undefined} onSelect={d => { setDateFrom(d ? format(d, "yyyy-MM-dd") : ""); setPage(1); }} initialFocus />
+              </PopoverContent>
+            </Popover>
+            <span className="text-muted-foreground text-xs">–</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-8 text-xs font-normal", !dateTo && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                  {dateTo ? format(new Date(dateTo), "dd/MM/yyyy") : "To"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                <Calendar mode="single" selected={dateTo ? new Date(dateTo) : undefined} onSelect={d => { setDateTo(d ? format(d, "yyyy-MM-dd") : ""); setPage(1); }} initialFocus />
+              </PopoverContent>
+            </Popover>
+            {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }} className="text-xs text-destructive hover:underline ml-1">Clear</button>}
+          </div>
           </select>
         </div>
 
