@@ -23,33 +23,27 @@ const CHANNEL_ICONS: Record<Channel, React.ReactNode> = {
 
 function ClearanceDashboard() {
   const navigate = useNavigate();
-  const { data: clearances = [] } = useQuery({
-    queryKey: ["dash_clearances"],
-    queryFn: async () => { const { data } = await supabase.from("clearances").select("id,status,valid_to,passengers,requested_date"); return data || []; },
-  });
-  const { data: flights = [] } = useQuery({
-    queryKey: ["dash_flights"],
-    queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("id,status"); return data || []; },
+  const { data: schedules = [] } = useQuery({
+    queryKey: ["dash_flight_schedules"],
+    queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("id,status,valid_to,passengers,requested_date"); return data || []; },
   });
 
-  const pending = clearances.filter(c => c.status === "Pending").length;
-  const approved = clearances.filter(c => c.status === "Approved").length;
+  const pending = schedules.filter((c: any) => c.status === "Pending").length;
+  const approved = schedules.filter((c: any) => c.status === "Approved").length;
   const today = new Date().toISOString().slice(0, 10);
-  const todayFlights = clearances.filter(c => c.requested_date === today).length;
-  const expiring = clearances.filter(c => c.status === "Approved" && c.valid_to && (new Date(c.valid_to).getTime() - Date.now()) / 86400000 <= 7 && (new Date(c.valid_to).getTime() - Date.now()) > 0).length;
-  const totalPax = clearances.filter(c => c.status === "Approved").reduce((s, c) => s + (c.passengers || 0), 0);
-  const scheduledFlights = flights.filter(f => f.status === "Scheduled").length;
+  const todayFlights = schedules.filter((c: any) => c.requested_date === today).length;
+  const expiring = schedules.filter((c: any) => c.status === "Approved" && c.valid_to && (new Date(c.valid_to).getTime() - Date.now()) / 86400000 <= 7 && (new Date(c.valid_to).getTime() - Date.now()) > 0).length;
+  const totalPax = schedules.filter((c: any) => c.status === "Approved").reduce((s: number, c: any) => s + (c.passengers || 0), 0);
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "Pending Clearances", value: pending, icon: <Clock size={18} />, color: "text-warning" },
+          { label: "Pending", value: pending, icon: <Clock size={18} />, color: "text-warning" },
           { label: "Approved", value: approved, icon: <CheckCircle2 size={18} />, color: "text-success" },
           { label: "Today's Flights", value: todayFlights, icon: <Plane size={18} />, color: "text-primary" },
           { label: "Expiring <7d", value: expiring, icon: <AlertTriangle size={18} />, color: "text-destructive" },
           { label: "Approved PAX", value: totalPax.toLocaleString(), icon: <Users size={18} />, color: "text-info" },
-          { label: "Scheduled Flights", value: scheduledFlights, icon: <Calendar size={18} />, color: "text-accent-foreground" },
         ].map(s => (
           <Card key={s.label}><CardContent className="p-3 flex items-center gap-3">
             <div className={s.color}>{s.icon}</div>
@@ -57,14 +51,10 @@ function ClearanceDashboard() {
           </CardContent></Card>
         ))}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/clearances")}>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ShieldCheck size={16} className="text-primary" /> Manage Clearances</CardTitle></CardHeader>
-          <CardContent className="text-xs text-muted-foreground">Add, edit, and approve flight clearance permits. Upload Excel schedules.</CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/flight-schedule")}>
-          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Plane size={16} className="text-info" /> Flight Schedule</CardTitle></CardHeader>
-          <CardContent className="text-xs text-muted-foreground">View and manage planned flight arrivals and departures.</CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ShieldCheck size={16} className="text-primary" /> Flight Schedules</CardTitle></CardHeader>
+          <CardContent className="text-xs text-muted-foreground">Add, edit, and approve flight schedules and clearance permits.</CardContent>
         </Card>
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/overfly-schedule")}>
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp size={16} className="text-success" /> Overfly Schedule</CardTitle></CardHeader>
@@ -83,7 +73,7 @@ function StationDashboard() {
   });
   const { data: schedules = [] } = useQuery({
     queryKey: ["dash_schedule_today"],
-    queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("id,status").eq("status", "Scheduled"); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("id,status").eq("status", "Approved"); return data || []; },
   });
 
   const today = new Date().toISOString().slice(0, 10);
