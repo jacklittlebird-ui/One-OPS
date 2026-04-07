@@ -458,14 +458,14 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
               <div>
                 <h3 className="text-sm font-bold text-info uppercase tracking-wider mb-3 flex items-center gap-2"><Clock size={14} />Aircraft Movement Timings</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <FormField label="Touch Down (T/D)"><input type="time" className={inputCls} value={data.td || ""} onChange={e => set("td", e.target.value)} /></FormField>
-                  <FormField label="Chocks On (C/O)"><input type="time" className={inputCls} value={data.co || ""} onChange={e => set("co", e.target.value)} /></FormField>
-                  <FormField label="Chocks Off (O/B)"><input type="time" className={inputCls} value={data.ob || ""} onChange={e => set("ob", e.target.value)} /></FormField>
-                  <FormField label="Take Off (T/O)"><input type="time" className={inputCls} value={data.to || ""} onChange={e => set("to", e.target.value)} /></FormField>
-                  <FormField label="ATA (Actual Arrival)"><input type="time" className={inputCls} value={data.ata || ""} onChange={e => set("ata", e.target.value)} /></FormField>
-                  <FormField label="ATD (Actual Departure)"><input type="time" className={inputCls} value={data.atd || ""} onChange={e => set("atd", e.target.value)} /></FormField>
-                  <FormField label="STA (Read-Only)"><input className={readOnlyCls} value={data.sta || ""} readOnly /></FormField>
-                  <FormField label="STD (Read-Only)"><input className={readOnlyCls} value={data.std || ""} readOnly /></FormField>
+                  <TimeField label="Touch Down (T/D)" value={data.td || ""} onChange={v => set("td", v)} />
+                  <TimeField label="Chocks On (C/O)" value={data.co || ""} onChange={v => set("co", v)} />
+                  <TimeField label="Chocks Off (O/B)" value={data.ob || ""} onChange={v => set("ob", v)} />
+                  <TimeField label="Take Off (T/O)" value={data.to || ""} onChange={v => set("to", v)} />
+                  <TimeField label="ATA (Actual Arrival)" value={data.ata || ""} onChange={v => set("ata", v)} />
+                  <TimeField label="ATD (Actual Departure)" value={data.atd || ""} onChange={v => set("atd", v)} />
+                  <TimeField label="STA (Read-Only)" value={data.sta || ""} readOnly />
+                  <TimeField label="STD (Read-Only)" value={data.std || ""} readOnly />
                 </div>
               </div>
               <div>
