@@ -823,7 +823,7 @@ export default function ServiceReportPage() {
       </div>
 
       {showAdd && (
-        <ReportForm
+        <TabbedReportForm
           title="New Service Report"
           data={newReport}
           onChange={setNewReport}
@@ -832,7 +832,7 @@ export default function ServiceReportPage() {
         />
       )}
       {editId && (
-        <ReportForm
+        <TabbedReportForm
           title="Edit Service Report"
           data={editData}
           onChange={setEditData}
