@@ -9,7 +9,7 @@ type TableName =
   | "traffic_rights" | "bulletins" | "manuals_forms" | "catering_items" | "tube_charges"
   | "airport_tax" | "basic_ramp" | "vendor_equipment" | "hall_vvip"
   | "countries" | "airports" | "services_catalog" | "service_providers"
-  | "airline_airport_services" | "clearances"
+  | "airline_airport_services"
   | "chart_of_accounts" | "journal_entries" | "journal_entry_lines"
   | "vendor_invoices" | "airline_incentives" | "airport_charges";
 

@@ -13,7 +13,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 
-type FlightRow = { id: string; flight_no: string; airline: string; origin: string; destination: string; arrival: string; departure: string; status: string; flight_type: string; aircraft: string; terminal: string; days: string; };
+type FlightRow = { id: string; flight_no: string; aircraft_type: string; route: string; sta: string; std: string; status: string; clearance_type: string; };
 type ServiceReportRow = { id: string; operator: string; flight_no: string; handling_type: string; arrival_date: string | null; departure_date: string | null; total_cost: number; pax_in_adult_i: number; pax_in_adult_d: number; pax_in_inf_i: number; pax_in_inf_d: number; pax_transit: number; station: string; day_night: string; };
 type StaffRow = { id: string; name: string; status: string; shift: string; department: string; };
 
@@ -21,8 +21,8 @@ export default function OperationsDashboard() {
   const navigate = useNavigate();
 
   const { data: flights = [] } = useQuery({
-    queryKey: ["flight_schedules"],
-    queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("*").order("departure", { ascending: true }); return (data || []) as FlightRow[]; },
+    queryKey: ["flight_schedules_ops"],
+    queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("id,flight_no,aircraft_type,route,sta,std,status,clearance_type").order("created_at", { ascending: false }); return (data || []) as FlightRow[]; },
   });
 
   const { data: reports = [] } = useQuery({
@@ -35,39 +35,30 @@ export default function OperationsDashboard() {
     queryFn: async () => { const { data } = await supabase.from("staff_roster").select("id,name,status,shift,department").limit(500); return (data || []) as StaffRow[]; },
   });
 
-  const { data: clearances = [] } = useQuery({
-    queryKey: ["clearances_dash"],
-    queryFn: async () => { const { data } = await supabase.from("clearances").select("id,status").limit(500); return (data || []) as { id: string; status: string }[]; },
-  });
-
   // KPIs
   const totalFlights = flights.length;
-  const scheduled = flights.filter(f => f.status === "Scheduled").length;
-  const completed = flights.filter(f => f.status === "Completed").length;
-  const delayed = flights.filter(f => f.status === "Delayed").length;
-  const cancelled = flights.filter(f => f.status === "Cancelled").length;
-  const uniqueAirlines = new Set(flights.map(f => f.airline)).size;
+  const approved = flights.filter(f => f.status === "Approved").length;
+  const pending = flights.filter(f => f.status === "Pending").length;
+  const rejected = flights.filter(f => f.status === "Rejected").length;
   const totalPax = reports.reduce((s, r) => s + (r.pax_in_adult_i || 0) + (r.pax_in_adult_d || 0) + (r.pax_in_inf_i || 0) + (r.pax_in_inf_d || 0) + (r.pax_transit || 0), 0);
   const totalRevenue = reports.reduce((s, r) => s + (r.total_cost || 0), 0);
-  const otpRate = totalFlights > 0 ? Math.round(((completed + scheduled) / totalFlights) * 100) : 0;
   const activeStaff = staff.filter(s => s.status === "Active").length;
-  const pendingClearances = clearances.filter(c => c.status === "Pending").length;
 
   const stats = [
-    { label: "Total Flights", value: String(totalFlights), sub: `${scheduled} scheduled`, icon: <Plane size={18} />, color: "bg-primary", link: "/flight-schedule", trend: null },
-    { label: "Active Airlines", value: String(uniqueAirlines), sub: "Unique operators", icon: <Building2 size={18} />, color: "bg-info", link: "/airlines", trend: null },
-    { label: "OTP Rate", value: `${otpRate}%`, sub: `${completed} completed`, icon: <CheckCircle2 size={18} />, color: "bg-success", link: "/flight-schedule", trend: otpRate >= 85 ? "up" : "down" },
-    { label: "Delayed", value: String(delayed), sub: `${totalFlights > 0 ? Math.round(delayed / totalFlights * 100) : 0}% of flights`, icon: <Timer size={18} />, color: "bg-warning", link: "/delay-codes", trend: delayed > 0 ? "down" : "up" },
+    { label: "Total Flights", value: String(totalFlights), sub: `${approved} approved`, icon: <Plane size={18} />, color: "bg-primary", link: "/clearances", trend: null },
+    { label: "Approved", value: String(approved), sub: "Flight schedules", icon: <CheckCircle2 size={18} />, color: "bg-success", link: "/clearances", trend: null },
+    { label: "Pending", value: String(pending), sub: "Awaiting approval", icon: <Clock size={18} />, color: "bg-warning", link: "/clearances", trend: pending > 0 ? "down" : "up" },
+    { label: "Rejected", value: String(rejected), sub: "Need revision", icon: <XCircle size={18} />, color: "bg-destructive", link: "/clearances", trend: null },
     { label: "Total PAX", value: totalPax.toLocaleString(), sub: "From service reports", icon: <Users size={18} />, color: "bg-violet", link: "/service-report", trend: null },
     { label: "Handling Rev.", value: `$${(totalRevenue / 1000).toFixed(0)}K`, sub: `${reports.length} reports`, icon: <TrendingUp size={18} />, color: "bg-emerald", link: "/service-report", trend: "up" },
     { label: "Active Staff", value: String(activeStaff), sub: `${staff.length} total`, icon: <Users size={18} />, color: "bg-cyan", link: "/staff-roster", trend: null },
-    { label: "Clearances", value: String(pendingClearances), sub: "Pending approval", icon: <Globe size={18} />, color: "bg-orange", link: "/clearances", trend: pendingClearances > 5 ? "down" : "up" },
+    { label: "Flight Types", value: String(new Set(flights.map(f => f.clearance_type)).size), sub: "Unique types", icon: <Globe size={18} />, color: "bg-orange", link: "/clearances", trend: null },
   ];
 
   // Flight status donut
   const flightStatusData = useMemo(() => {
-    const colors: Record<string, string> = { Scheduled: "hsl(210, 80%, 55%)", Completed: "hsl(152, 60%, 45%)", Delayed: "hsl(38, 92%, 50%)", Cancelled: "hsl(0, 84%, 60%)" };
-    return ["Scheduled", "Completed", "Delayed", "Cancelled"]
+    const colors: Record<string, string> = { Pending: "hsl(38, 92%, 50%)", Approved: "hsl(152, 60%, 45%)", Rejected: "hsl(0, 84%, 60%)", Expired: "hsl(215, 16%, 47%)" };
+    return ["Pending", "Approved", "Rejected", "Expired"]
       .map(s => ({ name: s, value: flights.filter(f => f.status === s).length, fill: colors[s] }))
       .filter(s => s.value > 0);
   }, [flights]);
@@ -75,7 +66,7 @@ export default function OperationsDashboard() {
   // Flight type distribution
   const flightTypeData = useMemo(() => {
     const typeCounts: Record<string, number> = {};
-    flights.forEach(f => { const t = f.flight_type || "Scheduled"; typeCounts[t] = (typeCounts[t] || 0) + 1; });
+    flights.forEach(f => { const t = f.clearance_type || "Landing"; typeCounts[t] = (typeCounts[t] || 0) + 1; });
     const fills = ["hsl(243, 55%, 45%)", "hsl(210, 80%, 55%)", "hsl(152, 60%, 45%)", "hsl(38, 92%, 50%)", "hsl(0, 84%, 60%)", "hsl(270, 60%, 55%)"];
     return Object.entries(typeCounts).slice(0, 6).map(([name, value], i) => ({ name, value, fill: fills[i % fills.length] }));
   }, [flights]);
@@ -100,18 +91,15 @@ export default function OperationsDashboard() {
   // Airline activity top 8
   const airlineActivity = useMemo(() => {
     const map: Record<string, { flights: number; pax: number; revenue: number }> = {};
-    flights.forEach(f => {
-      if (!map[f.airline]) map[f.airline] = { flights: 0, pax: 0, revenue: 0 };
-      map[f.airline].flights++;
-    });
     reports.forEach(r => {
       if (!map[r.operator]) map[r.operator] = { flights: 0, pax: 0, revenue: 0 };
+      map[r.operator].flights++;
       map[r.operator].pax += (r.pax_in_adult_i || 0) + (r.pax_in_adult_d || 0);
       map[r.operator].revenue += r.total_cost || 0;
     });
     return Object.entries(map).sort((a, b) => b[1].flights - a[1].flights).slice(0, 8)
       .map(([name, v]) => ({ name, ...v }));
-  }, [flights, reports]);
+  }, [reports]);
 
   // Staff by shift
   const shiftData = useMemo(() => {
@@ -124,18 +112,17 @@ export default function OperationsDashboard() {
   const recentFlights = flights.slice(0, 8);
 
   const statusColor: Record<string, string> = {
-    "Completed": "bg-success/15 text-success",
-    "Scheduled": "bg-info/15 text-info",
-    "Delayed": "bg-warning/15 text-warning",
-    "Cancelled": "bg-destructive/15 text-destructive",
+    "Approved": "bg-success/15 text-success",
+    "Pending": "bg-warning/15 text-warning",
+    "Rejected": "bg-destructive/15 text-destructive",
+    "Expired": "bg-muted text-muted-foreground",
   };
 
   const quickLinks = [
-    { label: "Flight Schedule", icon: <Plane size={16} />, path: "/flight-schedule", color: "bg-primary" },
+    { label: "Flight Schedules", icon: <Plane size={16} />, path: "/clearances", color: "bg-primary" },
     { label: "Overfly Schedule", icon: <Globe size={16} />, path: "/overfly-schedule", color: "bg-info" },
     { label: "Service Report", icon: <FileBarChart2 size={16} />, path: "/service-report", color: "bg-success" },
     { label: "Delay Codes", icon: <Clock size={16} />, path: "/delay-codes", color: "bg-warning" },
-    { label: "Clearances", icon: <Globe size={16} />, path: "/clearances", color: "bg-violet" },
     { label: "Staff Roster", icon: <Users size={16} />, path: "/staff-roster", color: "bg-cyan" },
     { label: "Airlines", icon: <Building2 size={16} />, path: "/airlines", color: "bg-orange" },
     { label: "Lost & Found", icon: <Luggage size={16} />, path: "/lost-found", color: "bg-rose" },
@@ -143,7 +130,7 @@ export default function OperationsDashboard() {
 
   return (
     <div className="space-y-5">
-      {/* KPI Cards - 8 cards */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
         {stats.map(s => (
           <button key={s.label} onClick={() => navigate(s.link)} className="stat-card flex-col items-start gap-2 text-left hover:shadow-md transition-all cursor-pointer group">
@@ -164,12 +151,11 @@ export default function OperationsDashboard() {
         ))}
       </div>
 
-      {/* Charts Row 1 - 4 charts */}
+      {/* Charts Row 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Flight Status Donut */}
         <div className="bg-card rounded-lg border p-4">
           <h3 className="font-semibold text-foreground text-sm mb-2 flex items-center gap-2">
-            <Timer size={14} className="text-warning" /> Flight Status
+            <Timer size={14} className="text-warning" /> Schedule Status
           </h3>
           {flightStatusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={170}>
@@ -184,10 +170,9 @@ export default function OperationsDashboard() {
           ) : <div className="flex items-center justify-center h-[170px] text-muted-foreground text-xs">No flights</div>}
         </div>
 
-        {/* Flight Type */}
         <div className="bg-card rounded-lg border p-4">
           <h3 className="font-semibold text-foreground text-sm mb-2 flex items-center gap-2">
-            <Plane size={14} className="text-info" /> Flight Types
+            <Plane size={14} className="text-info" /> Clearance Types
           </h3>
           {flightTypeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={170}>
@@ -202,7 +187,6 @@ export default function OperationsDashboard() {
           ) : <div className="flex items-center justify-center h-[170px] text-muted-foreground text-xs">No data</div>}
         </div>
 
-        {/* Day vs Night */}
         <div className="bg-card rounded-lg border p-4">
           <h3 className="font-semibold text-foreground text-sm mb-2 flex items-center gap-2">
             <Clock size={14} className="text-amber" /> Day vs Night Ops
@@ -220,7 +204,6 @@ export default function OperationsDashboard() {
           ) : <div className="flex items-center justify-center h-[170px] text-muted-foreground text-xs">No reports</div>}
         </div>
 
-        {/* Staff by Shift */}
         <div className="bg-card rounded-lg border p-4">
           <h3 className="font-semibold text-foreground text-sm mb-2 flex items-center gap-2">
             <Users size={14} className="text-cyan" /> Staff by Shift
@@ -241,10 +224,9 @@ export default function OperationsDashboard() {
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top Airlines bar chart */}
         <div className="bg-card rounded-lg border p-4">
           <h3 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-2">
-            <Building2 size={14} className="text-primary" /> Airline Activity
+            <Building2 size={14} className="text-primary" /> Operator Activity
           </h3>
           {airlineActivity.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
@@ -260,7 +242,6 @@ export default function OperationsDashboard() {
           ) : <div className="flex items-center justify-center h-[220px] text-muted-foreground text-sm">No data</div>}
         </div>
 
-        {/* Handling type radar */}
         <div className="bg-card rounded-lg border p-4">
           <h3 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-2">
             <FileBarChart2 size={14} className="text-violet" /> Handling Type Distribution
@@ -283,34 +264,33 @@ export default function OperationsDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-card rounded-lg border">
           <div className="p-4 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-foreground flex items-center gap-2"><Plane size={16} className="text-primary" /> Recent Flights</h2>
-            <button onClick={() => navigate("/flight-schedule")} className="text-xs text-primary hover:underline flex items-center gap-1">View all <ArrowRight size={12} /></button>
+            <h2 className="font-semibold text-foreground flex items-center gap-2"><Plane size={16} className="text-primary" /> Recent Flight Schedules</h2>
+            <button onClick={() => navigate("/clearances")} className="text-xs text-primary hover:underline flex items-center gap-1">View all <ArrowRight size={12} /></button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {["FLIGHT", "AIRLINE", "ROUTE", "DEP", "ARR", "TYPE", "TERMINAL", "STATUS"].map(h => (
+                  {["FLIGHT", "A/C TYPE", "ROUTE", "STA", "STD", "TYPE", "STATUS"].map(h => (
                     <th key={h} className="data-table-header px-3 py-2.5 text-left whitespace-nowrap text-[11px]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {recentFlights.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">
+                  <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">
                     <Plane size={32} className="mx-auto mb-2 text-muted-foreground/30" />
                     <p className="font-semibold text-foreground text-sm">No flights in schedule</p>
                     <p className="text-xs">Add flights to see them here</p>
                   </td></tr>
                 ) : recentFlights.map(f => (
-                  <tr key={f.id} className="data-table-row cursor-pointer hover:bg-muted/50" onClick={() => navigate("/flight-schedule")}>
+                  <tr key={f.id} className="data-table-row cursor-pointer hover:bg-muted/50" onClick={() => navigate("/clearances")}>
                     <td className="px-3 py-2 font-semibold text-foreground text-xs">{f.flight_no}</td>
-                    <td className="px-3 py-2 text-foreground text-xs">{f.airline}</td>
-                    <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground">{f.origin} → {f.destination}</td>
-                    <td className="px-3 py-2 text-foreground text-xs">{f.departure}</td>
-                    <td className="px-3 py-2 text-foreground text-xs">{f.arrival}</td>
-                    <td className="px-3 py-2 text-[10px] text-muted-foreground">{f.flight_type || "Scheduled"}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{f.terminal || "—"}</td>
+                    <td className="px-3 py-2 text-foreground text-xs">{f.aircraft_type || "—"}</td>
+                    <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground">{f.route || "—"}</td>
+                    <td className="px-3 py-2 text-foreground text-xs">{f.sta || "—"}</td>
+                    <td className="px-3 py-2 text-foreground text-xs">{f.std || "—"}</td>
+                    <td className="px-3 py-2 text-[10px] text-muted-foreground">{f.clearance_type || "Landing"}</td>
                     <td className="px-3 py-2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor[f.status] || "bg-muted text-muted-foreground"}`}>{f.status}</span>
                     </td>

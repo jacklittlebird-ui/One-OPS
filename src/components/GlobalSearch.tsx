@@ -15,7 +15,7 @@ interface SearchResult {
 function useSearchData() {
   const airlines = useQuery({ queryKey: ["airlines"], queryFn: async () => { const { data } = await supabase.from("airlines").select("code,name,country"); return data || []; } });
   const aircrafts = useQuery({ queryKey: ["aircrafts"], queryFn: async () => { const { data } = await supabase.from("aircrafts").select("registration,type,airline"); return data || []; } });
-  const flights = useQuery({ queryKey: ["flight_schedules"], queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("flight_no,airline,origin,destination"); return data || []; } });
+  const flights = useQuery({ queryKey: ["flight_schedules"], queryFn: async () => { const { data } = await supabase.from("flight_schedules").select("flight_no,route,aircraft_type,status"); return data || []; } });
   const catering = useQuery({ queryKey: ["catering_items"], queryFn: async () => { const { data } = await supabase.from("catering_items").select("item,price,category"); return data || []; } });
   const tubes = useQuery({ queryKey: ["tube_charges"], queryFn: async () => { const { data } = await supabase.from("tube_charges").select("service,price,airport"); return data || []; } });
   const taxes = useQuery({ queryKey: ["airport_tax"], queryFn: async () => { const { data } = await supabase.from("airport_tax").select("tax,amount,applicability"); return data || []; } });
@@ -36,7 +36,7 @@ function buildIndex(data: ReturnType<typeof useSearchData>): { text: string; res
 
   (data.airlines.data || []).forEach(a => entries.push({ text: `${a.code} ${a.name} ${a.country}`, result: { title: a.name, subtitle: `${a.code} · ${a.country}`, module: "Airlines", path: "/airlines", icon: <Plane size={14} /> } }));
   (data.aircrafts.data || []).forEach(a => entries.push({ text: `${a.registration} ${a.type} ${a.airline}`, result: { title: a.registration, subtitle: `${a.type} · ${a.airline}`, module: "Aircrafts", path: "/aircrafts", icon: <Plane size={14} /> } }));
-  (data.flights.data || []).forEach(f => entries.push({ text: `${f.flight_no} ${f.airline} ${f.origin} ${f.destination}`, result: { title: f.flight_no, subtitle: `${f.airline} · ${f.origin}→${f.destination}`, module: "Flights", path: "/flight-schedule", icon: <Plane size={14} /> } }));
+  (data.flights.data || []).forEach((f: any) => entries.push({ text: `${f.flight_no} ${f.route} ${f.aircraft_type}`, result: { title: f.flight_no, subtitle: `${f.route} · ${f.aircraft_type}`, module: "Flights", path: "/clearances", icon: <Plane size={14} /> } }));
   (data.catering.data || []).forEach(c => entries.push({ text: `${c.item} ${c.category}`, result: { title: c.item, subtitle: `${c.price} · ${c.category}`, module: "Catering", path: "/catering", icon: <UtensilsCrossed size={14} /> } }));
   (data.tubes.data || []).forEach(t => entries.push({ text: `${t.service} ${t.airport}`, result: { title: t.service, subtitle: `${t.price} · ${t.airport}`, module: "Tube", path: "/tube", icon: <Building2 size={14} /> } }));
   (data.taxes.data || []).forEach(t => entries.push({ text: `${t.tax} ${t.applicability}`, result: { title: t.tax, subtitle: t.amount, module: "Departure Tax", path: "/airport-tax", icon: <DollarSign size={14} /> } }));

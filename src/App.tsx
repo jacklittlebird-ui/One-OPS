@@ -9,7 +9,7 @@ import NotFound from "./pages/NotFound";
 import AppLayout from "./components/layout/AppLayout";
 import AirlinesPage from "./pages/Airlines";
 import AircraftsPage from "./pages/Aircrafts";
-import FlightSchedulePage from "./pages/FlightSchedule";
+
 import ServicesPage from "./pages/Services";
 import AirportChargesPage from "./pages/AirportCharges";
 import DashboardPage from "./pages/Dashboard";
@@ -67,7 +67,7 @@ function AppRoutes() {
       <Route path="/airport-charges" element={<ProtectedRoute><AppLayout><AirportChargesPage /></AppLayout></ProtectedRoute>} />
       <Route path="/airlines" element={<ProtectedRoute><AppLayout><AirlinesPage /></AppLayout></ProtectedRoute>} />
       <Route path="/aircrafts" element={<ProtectedRoute><AppLayout><AircraftsPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/flight-schedule" element={<ProtectedRoute><AppLayout><FlightSchedulePage /></AppLayout></ProtectedRoute>} />
+      <Route path="/flight-schedule" element={<Navigate to="/clearances" replace />} />
       <Route path="/services" element={<ProtectedRoute><AppLayout><ServicesPage /></AppLayout></ProtectedRoute>} />
       <Route path="/service-report" element={<ProtectedRoute><AppLayout><ServiceReportPage /></AppLayout></ProtectedRoute>} />
       <Route path="/invoices" element={<ProtectedRoute><AppLayout><InvoicesPage /></AppLayout></ProtectedRoute>} />
