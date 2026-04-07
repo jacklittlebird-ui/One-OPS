@@ -51,7 +51,7 @@ const ChannelContext = createContext<ChannelContextType | undefined>(undefined);
 export function ChannelProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [activeChannel, setActiveChannel] = useState<Channel>("station");
+  const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,10 +63,9 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
       setUserRoles(roles);
       
       const available = rolesToChannels(roles);
-      // Default admin users to admin channel on first load
-      if (roles.includes("admin") && activeChannel === "station") {
+      if (roles.includes("admin")) {
         setActiveChannel("admin");
-      } else if (!available.includes(activeChannel)) {
+      } else {
         setActiveChannel(available[0]);
       }
       setLoading(false);
@@ -77,9 +76,18 @@ export function ChannelProvider({ children }: { children: ReactNode }) {
 
   const channels = rolesToChannels(userRoles);
   const isAdmin = userRoles.includes("admin");
+  const resolvedChannel = activeChannel || channels[0] || "station";
+
+  if (loading || !activeChannel) {
+    return (
+      <ChannelContext.Provider value={{ channels, activeChannel: resolvedChannel, setActiveChannel: setActiveChannel as (c: Channel) => void, loading: true, userRoles, isAdmin }}>
+        {null}
+      </ChannelContext.Provider>
+    );
+  }
 
   return (
-    <ChannelContext.Provider value={{ channels, activeChannel, setActiveChannel, loading, userRoles, isAdmin }}>
+    <ChannelContext.Provider value={{ channels, activeChannel: resolvedChannel, setActiveChannel: setActiveChannel as (c: Channel) => void, loading, userRoles, isAdmin }}>
       {children}
     </ChannelContext.Provider>
   );
