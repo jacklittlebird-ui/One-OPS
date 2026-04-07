@@ -85,7 +85,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
       children: [
         { label: "Chart of Services", path: "/services" },
         { label: "Airport Charges", path: "/airport-charges" },
-        { label: "Airport Tax", path: "/airport-tax" },
+        { label: "Departure Tax", path: "/airport-tax" },
         { label: "Basic Ramp", path: "/basic-ramp" },
         { label: "Vendor Equipment", path: "/vendor-equipment" },
         { label: "Hall & VVIP", path: "/hall-vvip" },
@@ -227,7 +227,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
       children: [
         { label: "Tube", path: "/tube" },
         { label: "Airport Charges", path: "/airport-charges" },
-        { label: "Airport Tax", path: "/airport-tax" },
+        { label: "Departure Tax", path: "/airport-tax" },
         { label: "Basic Ramp", path: "/basic-ramp" },
         { label: "Vendor Equipment", path: "/vendor-equipment" },
         { label: "Hall & VVIP", path: "/hall-vvip" },
