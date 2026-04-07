@@ -996,6 +996,7 @@ export default function ServiceReportPage() {
                   </td>
                 </tr>
               ))}
+            </tbody>
           </table>
         </div>
 
