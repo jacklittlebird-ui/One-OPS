@@ -11,9 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type OverflyRow = {
   id: string; flight_no: string; operator: string; registration: string; aircraft_type: string;
   route_from: string; route_to: string;
-  overfly_date: string; valid_from: string; valid_to: string;
-  permit_no: string; status: string; fee: number; currency: string;
-  distance_nm: number;
+  valid_from: string; valid_to: string;
+  permit_no: string; status: string;
 };
 
 const statusBadge = (s: string) => {
@@ -39,7 +38,7 @@ export default function OverflySchedulePage() {
   const [detailItem, setDetailItem] = useState<OverflyRow | null>(null);
   const [editItem, setEditItem] = useState<OverflyRow | null>(null);
 
-  const emptyForm = { flight_no: "", operator: "", registration: "", aircraft_type: "", route_from: "", route_to: "", overfly_date: "", valid_from: "", valid_to: "", permit_no: "", status: "Pending", fee: 0, currency: "USD", distance_nm: 0 };
+  const emptyForm = { flight_no: "", operator: "", registration: "", aircraft_type: "", route_from: "", route_to: "", valid_from: "", valid_to: "", permit_no: "", status: "Pending" };
   const [form, setForm] = useState<any>(emptyForm);
 
   const filtered = useMemo(() => {
@@ -53,22 +52,20 @@ export default function OverflySchedulePage() {
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const approved = data.filter(d => d.status === "Approved").length;
   const pending = data.filter(d => d.status === "Pending").length;
-  const totalFees = data.filter(d => d.status === "Approved").reduce((s, d) => s + d.fee, 0);
-  const totalNM = data.filter(d => d.status === "Approved").reduce((s, d) => s + (d.distance_nm || 0), 0);
 
   const openAdd = () => { setEditItem(null); setForm(emptyForm); setDialogOpen(true); };
   const openEdit = (row: OverflyRow) => { setEditItem(row); setForm({ ...row }); setDialogOpen(true); };
 
   const handleSave = async () => {
     if (!form.flight_no || !form.operator) return;
-    const payload = { ...form, fee: Number(form.fee) || 0, distance_nm: Number(form.distance_nm) || 0 };
+    const payload = { ...form };
     delete payload.id;
     if (editItem) { await update({ id: editItem.id, ...payload }); } else { await add(payload); }
     setDialogOpen(false);
   };
 
   const handleExport = () => {
-    const ws = XLSX.utils.json_to_sheet(filtered.map(r => ({ "Flight No": r.flight_no, Operator: r.operator, Registration: r.registration, "A/C Type": r.aircraft_type, From: r.route_from, To: r.route_to, Date: r.overfly_date, "Valid From": r.valid_from, "Valid To": r.valid_to, "Distance NM": r.distance_nm, "Permit No": r.permit_no, Status: r.status, Fee: r.fee, Currency: r.currency })));
+    const ws = XLSX.utils.json_to_sheet(filtered.map(r => ({ "Flight No": r.flight_no, Operator: r.operator, Registration: r.registration, "A/C Type": r.aircraft_type, From: r.route_from, To: r.route_to, "Valid From": r.valid_from, "Valid To": r.valid_to, "Permit No": r.permit_no, Status: r.status })));
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Overfly Schedule"); XLSX.writeFile(wb, "overfly_schedule.xlsx");
   };
 
@@ -87,12 +84,10 @@ export default function OverflySchedulePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="stat-card"><div className="stat-card-icon bg-primary"><Globe size={20} /></div><div><div className="text-2xl font-bold text-foreground">{data.length}</div><div className="text-xs text-muted-foreground">Total Overflights</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-success"><CheckCircle size={20} /></div><div><div className="text-2xl font-bold text-foreground">{approved}</div><div className="text-xs text-muted-foreground">Approved</div></div></div>
         <div className="stat-card"><div className="stat-card-icon bg-warning"><Clock size={20} /></div><div><div className="text-2xl font-bold text-foreground">{pending}</div><div className="text-xs text-muted-foreground">Pending</div></div></div>
-        <div className="stat-card"><div className="stat-card-icon bg-info"><MapPin size={20} /></div><div><div className="text-2xl font-bold text-foreground">{totalNM.toLocaleString()}</div><div className="text-xs text-muted-foreground">Total NM</div></div></div>
-        <div className="stat-card"><div className="stat-card-icon bg-accent"><AlertCircle size={20} /></div><div><div className="text-2xl font-bold text-foreground">${totalFees.toLocaleString()}</div><div className="text-xs text-muted-foreground">Total Fees</div></div></div>
       </div>
 
       <div className="bg-card rounded-lg border overflow-hidden">
@@ -109,23 +104,20 @@ export default function OverflySchedulePage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr>{["FLIGHT","OPERATOR","REG","ROUTE","DATE","VALID FROM","VALID TO","DIST NM","PERMIT","STATUS","FEE","ACTIONS"].map(h => <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>)}</tr></thead>
+            <thead><tr>{["FLIGHT","OPERATOR","REG","ROUTE","VALID FROM","VALID TO","PERMIT","STATUS","ACTIONS"].map(h => <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>)}</tr></thead>
             <tbody>
               {pageData.length === 0 ? (
-                <tr><td colSpan={12} className="text-center py-16"><Database size={40} className="mx-auto text-muted-foreground/30 mb-3" /><p className="font-semibold text-foreground">No Records</p></td></tr>
+                <tr><td colSpan={9} className="text-center py-16"><Database size={40} className="mx-auto text-muted-foreground/30 mb-3" /><p className="font-semibold text-foreground">No Records</p></td></tr>
               ) : pageData.map(row => (
                 <tr key={row.id} className="data-table-row">
                   <td className="px-3 py-2.5 font-mono font-semibold text-foreground">{row.flight_no}</td>
                   <td className="px-3 py-2.5 text-foreground">{row.operator}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{row.registration}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{row.route_from}→{row.route_to}</td>
-                  <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{formatDateDMY(row.overfly_date)}</td>
                   <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{formatDateDMY(row.valid_from)}</td>
                   <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{formatDateDMY(row.valid_to)}</td>
-                  <td className="px-3 py-2.5 font-mono text-xs">{row.distance_nm || "—"}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{row.permit_no}</td>
                   <td className="px-3 py-2.5">{statusBadge(row.status)}</td>
-                  <td className="px-3 py-2.5 font-semibold text-success">{row.fee.toLocaleString()}</td>
                   <td className="px-3 py-2.5 flex gap-1.5">
                     <button onClick={() => setDetailItem(row)} className="text-primary hover:text-primary/80"><Eye size={13} /></button>
                     <button onClick={() => openEdit(row)} className="text-info hover:text-info/80"><Pencil size={13} /></button>
@@ -158,12 +150,9 @@ export default function OverflySchedulePage() {
               <div><span className="text-muted-foreground text-xs">Operator</span><p className="font-medium">{detailItem.operator}</p></div>
               <div><span className="text-muted-foreground text-xs">Aircraft</span><p className="font-medium">{detailItem.aircraft_type} / {detailItem.registration}</p></div>
               <div><span className="text-muted-foreground text-xs">Route</span><p className="font-medium">{detailItem.route_from} → {detailItem.route_to}</p></div>
-              <div><span className="text-muted-foreground text-xs">Date</span><p className="font-medium">{formatDateDMY(detailItem.overfly_date)}</p></div>
               <div><span className="text-muted-foreground text-xs">Valid From</span><p className="font-medium">{formatDateDMY(detailItem.valid_from)}</p></div>
               <div><span className="text-muted-foreground text-xs">Valid To</span><p className="font-medium">{formatDateDMY(detailItem.valid_to)}</p></div>
-              <div><span className="text-muted-foreground text-xs">Distance</span><p className="font-medium">{detailItem.distance_nm} NM</p></div>
               <div><span className="text-muted-foreground text-xs">Permit No</span><p className="font-medium">{detailItem.permit_no}</p></div>
-              <div><span className="text-muted-foreground text-xs">Fee</span><p className="font-medium font-mono">{detailItem.fee.toLocaleString()} {detailItem.currency}</p></div>
               <div><span className="text-muted-foreground text-xs">Status</span><p>{statusBadge(detailItem.status)}</p></div>
             </div>
           )}
@@ -187,14 +176,12 @@ export default function OverflySchedulePage() {
               <Input placeholder="From" value={form.route_from} onChange={e => setForm({ ...form, route_from: e.target.value.toUpperCase() })} />
               <Input placeholder="To" value={form.route_to} onChange={e => setForm({ ...form, route_to: e.target.value.toUpperCase() })} />
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div><label className="text-xs text-muted-foreground">Date</label><Input type="date" value={form.overfly_date} onChange={e => setForm({ ...form, overfly_date: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-2">
               <div><label className="text-xs text-muted-foreground">Valid From</label><Input type="date" value={form.valid_from} onChange={e => setForm({ ...form, valid_from: e.target.value })} /></div>
               <div><label className="text-xs text-muted-foreground">Valid To</label><Input type="date" value={form.valid_to} onChange={e => setForm({ ...form, valid_to: e.target.value })} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Permit No" value={form.permit_no} onChange={e => setForm({ ...form, permit_no: e.target.value })} />
-              <Input type="number" placeholder="Fee" value={form.fee} onChange={e => setForm({ ...form, fee: e.target.value })} />
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -205,9 +192,6 @@ export default function OverflySchedulePage() {
                   <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Input type="number" placeholder="Distance NM" value={form.distance_nm} onChange={e => setForm({ ...form, distance_nm: e.target.value })} />
             </div>
             <Button className="w-full" onClick={handleSave}>{editItem ? "Update" : "Save"}</Button>
           </div>
