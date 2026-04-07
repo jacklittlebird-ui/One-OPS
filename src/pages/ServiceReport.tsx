@@ -787,17 +787,17 @@ export default function ServiceReportPage() {
           <table className="w-full text-sm">
             <thead>
               <tr>
-                {["#", "OPERATOR", "FLIGHT", "TYPE", "STATION", "ROUTE", "ARR DATE", "A/C TYPE", "MTOW", "D/N", "STA", "C/O", "O/B", "GND TIME", "PAX IN", "DLY", "TOTAL ($)", "ACTIONS"].map(h => (
+                {["#", "OPERATOR", "FLIGHT", "TYPE", "STATION", "ROUTE", "ARR DATE", "A/C TYPE", "MTOW", "D/N", "PAX IN", "DLY", "TOTAL ($)", "REVIEW", "ACTIONS"].map(h => (
                   <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={18} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={15} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
               ) : pageData.length === 0 ? (
                 <tr>
-                  <td colSpan={18} className="text-center py-16">
+                  <td colSpan={15} className="text-center py-16">
                     <FileBarChart2 size={40} className="mx-auto text-muted-foreground/30 mb-3" />
                     <p className="font-semibold text-foreground">No Service Reports Found</p>
                     <p className="text-muted-foreground text-sm mt-1">Add a new report or upload an Excel file</p>
@@ -825,15 +825,26 @@ export default function ServiceReportPage() {
                       </span>
                     ); })()}
                   </td>
-                  <td className="px-3 py-2.5 text-foreground">{r.sta}</td>
-                  <td className="px-3 py-2.5 text-foreground">{r.co || "—"}</td>
-                  <td className="px-3 py-2.5 text-foreground">{r.ob || "—"}</td>
-                  <td className="px-3 py-2.5 text-foreground">{r.groundTime || "—"}</td>
                   <td className="px-3 py-2.5 text-foreground">{r.paxInAdultI + r.paxInInfI + r.paxInAdultD + r.paxInInfD}</td>
                   <td className="px-3 py-2.5 text-foreground">
                     {r.delays && r.delays.length > 0 ? r.delays.map(d => d.code).join("/") : "—"}
                   </td>
                   <td className="px-3 py-2.5 font-semibold text-success">{r.totalCost.toLocaleString()}</td>
+                  <td className="px-3 py-2.5">
+                    {(() => {
+                      const cfg: Record<string, { icon: React.ReactNode; cls: string }> = {
+                        pending: { icon: <Clock size={11} />, cls: "bg-warning/15 text-warning" },
+                        approved: { icon: <CheckCircle2 size={11} />, cls: "bg-success/15 text-success" },
+                        rejected: { icon: <XCircle size={11} />, cls: "bg-destructive/15 text-destructive" },
+                      };
+                      const c = cfg[r.reviewStatus] || cfg.pending;
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${c.cls}`}>
+                          {c.icon}{r.reviewStatus === "pending" ? "Pending" : r.reviewStatus === "approved" ? "Approved" : "Rejected"}
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-1.5">
                       <button onClick={() => {
