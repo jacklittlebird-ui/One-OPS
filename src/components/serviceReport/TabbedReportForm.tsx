@@ -42,6 +42,81 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+/** Convert ISO string (yyyy-mm-dd) to Date or undefined */
+function toDate(val: string | null | undefined): Date | undefined {
+  if (!val) return undefined;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+/** Convert Date to ISO string (yyyy-mm-dd) for storage */
+function toISO(d: Date | undefined): string {
+  if (!d) return "";
+  return format(d, "yyyy-MM-dd");
+}
+
+/** Display date as DD/MM/YYYY */
+function displayDate(val: string | null | undefined): string {
+  if (!val) return "";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "";
+  return format(d, "dd/MM/yyyy");
+}
+
+function DatePickerField({ label, value, onChange, readOnly }: { label: string; value: string; onChange: (v: string) => void; readOnly?: boolean }) {
+  const [open, setOpen] = useState(false);
+  if (readOnly) {
+    return (
+      <FormField label={label}>
+        <input className={readOnlyCls} value={displayDate(value)} readOnly />
+      </FormField>
+    );
+  }
+  return (
+    <FormField label={label}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm h-[38px]", !value && "text-muted-foreground")}>
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {value ? displayDate(value) : "DD/MM/YYYY"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={toDate(value)}
+            onSelect={(d) => { onChange(toISO(d)); setOpen(false); }}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
+    </FormField>
+  );
+}
+
+function TimeField({ label, value, onChange, readOnly }: { label: string; value: string; onChange?: (v: string) => void; readOnly?: boolean }) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!onChange) return;
+    let v = e.target.value.replace(/[^0-9:]/g, "");
+    if (v.length === 2 && !v.includes(":") && (value || "").length !== 3) v += ":";
+    if (v.length > 5) v = v.slice(0, 5);
+    onChange(v);
+  };
+  return (
+    <FormField label={label}>
+      <input
+        className={readOnly ? readOnlyCls : inputCls}
+        value={value || ""}
+        onChange={handleChange}
+        readOnly={readOnly}
+        placeholder="HH:MM"
+        maxLength={5}
+      />
+    </FormField>
+  );
+}
+
 function isNightTime(timeStr: string, dateStr: string): boolean {
   if (!timeStr || !dateStr) return false;
   const [h] = timeStr.split(":").map(Number);
