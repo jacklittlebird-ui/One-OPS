@@ -451,6 +451,12 @@ function ReportForm({ data, onChange, onSave, onCancel, title }: ReportFormProps
   );
 }
 
+// A merged row can be either a completed service report or an unlinked flight schedule
+interface MergedRow extends ReportFormData {
+  isLinked: boolean; // true = has service report, false = only flight schedule
+  flightScheduleId?: string;
+}
+
 export default function ServiceReportPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -460,6 +466,7 @@ export default function ServiceReportPage() {
   const [handlingFilter, setHandlingFilter] = useState("All Types");
   const [stationFilter, setStationFilter] = useState("All Stations");
   const [reviewFilter, setReviewFilter] = useState("All Review");
+  const [statusFilter, setStatusFilter] = useState("All Status");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
@@ -488,10 +495,74 @@ export default function ServiceReportPage() {
     },
   });
 
+  // Fetch flight schedules
+  const { data: dbFlights = [] } = useQuery({
+    queryKey: ["flight_schedules"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("flight_schedules").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const reports: ReportFormData[] = useMemo(
     () => dbReports.map(r => dbToForm(r, dbDelays)),
     [dbReports, dbDelays]
   );
+
+  // Merge: show all flight schedules + linked service reports
+  const mergedRows: MergedRow[] = useMemo(() => {
+    // Index service reports by flight_no for quick lookup
+    const reportsByFlight = new Map<string, ReportFormData[]>();
+    reports.forEach(r => {
+      const key = r.flightNo.trim().toLowerCase();
+      if (!reportsByFlight.has(key)) reportsByFlight.set(key, []);
+      reportsByFlight.get(key)!.push(r);
+    });
+
+    const rows: MergedRow[] = [];
+    const usedReportIds = new Set<string>();
+
+    // For each flight schedule, find matching service reports or create placeholder
+    dbFlights.forEach(f => {
+      const key = f.flight_no.trim().toLowerCase();
+      const matchedReports = reportsByFlight.get(key) || [];
+      if (matchedReports.length > 0) {
+        matchedReports.forEach(r => {
+          usedReportIds.add(r.id!);
+          rows.push({ ...r, isLinked: true, flightScheduleId: f.id });
+        });
+      } else {
+        // Create a placeholder row from flight schedule data
+        rows.push({
+          ...emptyReport() as ReportFormData,
+          id: undefined,
+          flightNo: f.flight_no,
+          operator: f.airline,
+          aircraftType: f.aircraft,
+          route: `${f.origin}/${f.destination}`,
+          sta: f.departure,
+          std: f.arrival,
+          reviewStatus: "pending",
+          reviewComment: "",
+          reviewedBy: "",
+          reviewedAt: null,
+          delays: [],
+          isLinked: false,
+          flightScheduleId: f.id,
+        });
+      }
+    });
+
+    // Also add service reports not linked to any flight schedule
+    reports.forEach(r => {
+      if (!usedReportIds.has(r.id!)) {
+        rows.push({ ...r, isLinked: true });
+      }
+    });
+
+    return rows;
+  }, [reports, dbFlights]);
 
   // Save new report
   const addMutation = useMutation({
@@ -529,7 +600,6 @@ export default function ServiceReportPage() {
       const dbData = formToDb(data);
       const { error } = await supabase.from("service_reports").update(dbData as any).eq("id", id);
       if (error) throw error;
-      // Replace delays: delete old, insert new
       await supabase.from("service_report_delays").delete().eq("report_id", id);
       if (delays.length > 0) {
         const delayRows = delays.map((d, i) => ({
@@ -584,11 +654,13 @@ export default function ServiceReportPage() {
     }
   }, [location.search]);
 
-  const allStations = useMemo(() => [...new Set(reports.map(r => r.station))], [reports]);
-  const allHandlingTypes = useMemo(() => [...new Set(reports.map(r => r.handlingType))], [reports]);
+  const allStations = useMemo(() => [...new Set(mergedRows.filter(r => r.station).map(r => r.station))], [mergedRows]);
+  const allHandlingTypes = useMemo(() => [...new Set(mergedRows.filter(r => r.handlingType).map(r => r.handlingType))], [mergedRows]);
 
   const filtered = useMemo(() => {
-    let r = reports;
+    let r = mergedRows;
+    if (statusFilter === "Completed") r = r.filter(x => x.isLinked);
+    if (statusFilter === "Pending Completion") r = r.filter(x => !x.isLinked);
     if (handlingFilter !== "All Types") r = r.filter(x => x.handlingType === handlingFilter);
     if (stationFilter !== "All Stations") r = r.filter(x => x.station === stationFilter);
     if (reviewFilter !== "All Review") r = r.filter(x => x.reviewStatus === reviewFilter);
@@ -603,7 +675,7 @@ export default function ServiceReportPage() {
       );
     }
     return r;
-  }, [reports, handlingFilter, stationFilter, reviewFilter, dateFrom, dateTo, search]);
+  }, [mergedRows, statusFilter, handlingFilter, stationFilter, reviewFilter, dateFrom, dateTo, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
