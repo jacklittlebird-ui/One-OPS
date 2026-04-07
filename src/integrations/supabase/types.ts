@@ -598,141 +598,6 @@ export type Database = {
           },
         ]
       }
-      clearances: {
-        Row: {
-          aircraft_type: string
-          airline_id: string | null
-          arrival_date: string | null
-          arrival_flight: string | null
-          authority: string
-          cargo_kg: number
-          clearance_type: string
-          config: number | null
-          created_at: string
-          departure_date: string | null
-          departure_flight: string | null
-          flight_no: string
-          flight_schedule_id: string | null
-          handling: string | null
-          handling_agent: string
-          id: string
-          no_of_flights: number | null
-          notes: string | null
-          passengers: number
-          period_from: string | null
-          period_to: string | null
-          permit_no: string
-          purpose: string
-          ref_no: string | null
-          registration: string
-          remarks: string
-          requested_date: string | null
-          route: string
-          royalty: boolean | null
-          skd_type: string | null
-          sta: string | null
-          status: Database["public"]["Enums"]["clearance_status"]
-          std: string | null
-          updated_at: string
-          valid_from: string | null
-          valid_to: string | null
-          week_days: string | null
-        }
-        Insert: {
-          aircraft_type?: string
-          airline_id?: string | null
-          arrival_date?: string | null
-          arrival_flight?: string | null
-          authority?: string
-          cargo_kg?: number
-          clearance_type?: string
-          config?: number | null
-          created_at?: string
-          departure_date?: string | null
-          departure_flight?: string | null
-          flight_no?: string
-          flight_schedule_id?: string | null
-          handling?: string | null
-          handling_agent?: string
-          id?: string
-          no_of_flights?: number | null
-          notes?: string | null
-          passengers?: number
-          period_from?: string | null
-          period_to?: string | null
-          permit_no?: string
-          purpose?: string
-          ref_no?: string | null
-          registration?: string
-          remarks?: string
-          requested_date?: string | null
-          route?: string
-          royalty?: boolean | null
-          skd_type?: string | null
-          sta?: string | null
-          status?: Database["public"]["Enums"]["clearance_status"]
-          std?: string | null
-          updated_at?: string
-          valid_from?: string | null
-          valid_to?: string | null
-          week_days?: string | null
-        }
-        Update: {
-          aircraft_type?: string
-          airline_id?: string | null
-          arrival_date?: string | null
-          arrival_flight?: string | null
-          authority?: string
-          cargo_kg?: number
-          clearance_type?: string
-          config?: number | null
-          created_at?: string
-          departure_date?: string | null
-          departure_flight?: string | null
-          flight_no?: string
-          flight_schedule_id?: string | null
-          handling?: string | null
-          handling_agent?: string
-          id?: string
-          no_of_flights?: number | null
-          notes?: string | null
-          passengers?: number
-          period_from?: string | null
-          period_to?: string | null
-          permit_no?: string
-          purpose?: string
-          ref_no?: string | null
-          registration?: string
-          remarks?: string
-          requested_date?: string | null
-          route?: string
-          royalty?: boolean | null
-          skd_type?: string | null
-          sta?: string | null
-          status?: Database["public"]["Enums"]["clearance_status"]
-          std?: string | null
-          updated_at?: string
-          valid_from?: string | null
-          valid_to?: string | null
-          week_days?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clearances_airline_id_fkey"
-            columns: ["airline_id"]
-            isOneToOne: false
-            referencedRelation: "airlines"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clearances_flight_schedule_id_fkey"
-            columns: ["flight_schedule_id"]
-            isOneToOne: false
-            referencedRelation: "flight_schedules"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       contracts: {
         Row: {
           airline: string
@@ -876,72 +741,128 @@ export type Database = {
       }
       flight_schedules: {
         Row: {
-          aircraft: string
-          airline: string
-          arrival: string
-          codeshare: string
+          aircraft_type: string
+          airline_id: string | null
+          arrival_date: string | null
+          arrival_flight: string | null
+          authority: string
+          cargo_kg: number
+          clearance_type: string
+          config: number | null
           created_at: string
-          days: string
-          departure: string
-          destination: string
-          effective_from: string | null
-          effective_to: string | null
+          departure_date: string | null
+          departure_flight: string | null
           flight_no: string
-          flight_type: string
-          frequency: string
+          handling: string | null
           handling_agent: string
           id: string
-          origin: string
-          season: string
-          status: Database["public"]["Enums"]["flight_status"]
-          terminal: string
+          no_of_flights: number | null
+          notes: string | null
+          passengers: number
+          period_from: string | null
+          period_to: string | null
+          permit_no: string
+          purpose: string
+          ref_no: string | null
+          registration: string
+          remarks: string
+          requested_date: string | null
+          route: string
+          royalty: boolean | null
+          skd_type: string | null
+          sta: string | null
+          status: Database["public"]["Enums"]["clearance_status"]
+          std: string | null
           updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+          week_days: string | null
         }
         Insert: {
-          aircraft?: string
-          airline: string
-          arrival: string
-          codeshare?: string
+          aircraft_type?: string
+          airline_id?: string | null
+          arrival_date?: string | null
+          arrival_flight?: string | null
+          authority?: string
+          cargo_kg?: number
+          clearance_type?: string
+          config?: number | null
           created_at?: string
-          days?: string
-          departure: string
-          destination: string
-          effective_from?: string | null
-          effective_to?: string | null
-          flight_no: string
-          flight_type?: string
-          frequency?: string
+          departure_date?: string | null
+          departure_flight?: string | null
+          flight_no?: string
+          handling?: string | null
           handling_agent?: string
           id?: string
-          origin: string
-          season?: string
-          status?: Database["public"]["Enums"]["flight_status"]
-          terminal?: string
+          no_of_flights?: number | null
+          notes?: string | null
+          passengers?: number
+          period_from?: string | null
+          period_to?: string | null
+          permit_no?: string
+          purpose?: string
+          ref_no?: string | null
+          registration?: string
+          remarks?: string
+          requested_date?: string | null
+          route?: string
+          royalty?: boolean | null
+          skd_type?: string | null
+          sta?: string | null
+          status?: Database["public"]["Enums"]["clearance_status"]
+          std?: string | null
           updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          week_days?: string | null
         }
         Update: {
-          aircraft?: string
-          airline?: string
-          arrival?: string
-          codeshare?: string
+          aircraft_type?: string
+          airline_id?: string | null
+          arrival_date?: string | null
+          arrival_flight?: string | null
+          authority?: string
+          cargo_kg?: number
+          clearance_type?: string
+          config?: number | null
           created_at?: string
-          days?: string
-          departure?: string
-          destination?: string
-          effective_from?: string | null
-          effective_to?: string | null
+          departure_date?: string | null
+          departure_flight?: string | null
           flight_no?: string
-          flight_type?: string
-          frequency?: string
+          handling?: string | null
           handling_agent?: string
           id?: string
-          origin?: string
-          season?: string
-          status?: Database["public"]["Enums"]["flight_status"]
-          terminal?: string
+          no_of_flights?: number | null
+          notes?: string | null
+          passengers?: number
+          period_from?: string | null
+          period_to?: string | null
+          permit_no?: string
+          purpose?: string
+          ref_no?: string | null
+          registration?: string
+          remarks?: string
+          requested_date?: string | null
+          route?: string
+          royalty?: boolean | null
+          skd_type?: string | null
+          sta?: string | null
+          status?: Database["public"]["Enums"]["clearance_status"]
+          std?: string | null
           updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          week_days?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "flight_schedules_airline_id_fkey"
+            columns: ["airline_id"]
+            isOneToOne: false
+            referencedRelation: "airlines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hall_vvip: {
         Row: {
@@ -2023,7 +1944,6 @@ export type Database = {
         | "Cancelled"
       contract_status: "Active" | "Expired" | "Pending" | "Terminated"
       currency_type: "USD" | "EUR" | "EGP"
-      flight_status: "Scheduled" | "Delayed" | "Cancelled" | "Completed"
       handling_type:
         | "Turn Around"
         | "Night Stop"
@@ -2222,7 +2142,6 @@ export const Constants = {
       ],
       contract_status: ["Active", "Expired", "Pending", "Terminated"],
       currency_type: ["USD", "EUR", "EGP"],
-      flight_status: ["Scheduled", "Delayed", "Cancelled", "Completed"],
       handling_type: [
         "Turn Around",
         "Night Stop",
