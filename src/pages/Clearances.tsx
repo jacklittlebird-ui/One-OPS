@@ -151,7 +151,8 @@ export default function ClearancesPage() {
         let count = 0;
         for (const fDate of flightDates) {
           await add(buildPayload({
-            requested_date: fDate,
+            arrival_date: fDate,
+            departure_date: fDate,
             no_of_flights: 1,
           }));
           count++;
@@ -223,7 +224,8 @@ export default function ClearancesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
+                <TableHead>Arrival Date</TableHead>
+                <TableHead>Departure Date</TableHead>
                 <TableHead>Flight</TableHead>
                 <TableHead>Reg No</TableHead>
                 <TableHead>A/C Type</TableHead>
@@ -242,7 +244,8 @@ export default function ClearancesPage() {
                 const statusIcon = c.status === "Pending" ? <Clock size={12} /> : c.status === "Approved" ? <CheckCircle2 size={12} /> : c.status === "Rejected" ? <XCircle size={12} /> : <AlertTriangle size={12} />;
                 return (
                   <TableRow key={c.id}>
-                    <TableCell className="text-xs">{formatDateDMY(c.requested_date)}</TableCell>
+                    <TableCell className="text-xs">{formatDateDMY(c.arrival_date)}</TableCell>
+                    <TableCell className="text-xs">{formatDateDMY(c.departure_date)}</TableCell>
                     <TableCell className="font-medium font-mono">{c.flight_no}</TableCell>
                     <TableCell className="text-xs font-mono">{c.registration || "—"}</TableCell>
                     <TableCell className="text-xs">{c.aircraft_type || "—"}</TableCell>
@@ -264,7 +267,7 @@ export default function ClearancesPage() {
                   </TableRow>
                 );
               })}
-              {filtered.length === 0 && <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No flight schedules found</TableCell></TableRow>}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No flight schedules found</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
