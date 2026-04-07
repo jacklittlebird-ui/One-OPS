@@ -847,15 +847,33 @@ export default function ServiceReportPage() {
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-1.5">
-                      <button onClick={() => {
-                        const params = new URLSearchParams({
-                          operator: r.operator, flightRef: r.flightNo,
-                          description: `${r.handlingType} – ${r.route}`,
-                          civilAviation: String(r.civilAviationFee), handling: String(r.handlingFee),
-                          airportCharges: String(r.airportCharge),
-                        });
-                        navigate(`/invoices?${params.toString()}`);
-                      }} className="text-success hover:text-success/80" title="Generate Invoice"><Receipt size={13} /></button>
+                      {r.reviewStatus === "pending" && (
+                        <>
+                          <button onClick={async () => {
+                            await supabase.from("service_reports").update({ review_status: "approved", reviewed_by: "Operations", reviewed_at: new Date().toISOString() } as any).eq("id", r.id);
+                            queryClient.invalidateQueries({ queryKey: ["service_reports"] });
+                            toast({ title: "✅ Approved" });
+                          }} className="text-success hover:text-success/80" title="Approve"><CheckCircle2 size={13} /></button>
+                          <button onClick={async () => {
+                            const comment = prompt("Rejection reason:");
+                            if (comment === null) return;
+                            await supabase.from("service_reports").update({ review_status: "rejected", review_comment: comment, reviewed_by: "Operations", reviewed_at: new Date().toISOString() } as any).eq("id", r.id);
+                            queryClient.invalidateQueries({ queryKey: ["service_reports"] });
+                            toast({ title: "❌ Rejected", description: comment });
+                          }} className="text-destructive hover:text-destructive/80" title="Reject"><XCircle size={13} /></button>
+                        </>
+                      )}
+                      {r.reviewStatus === "approved" && (
+                        <button onClick={() => {
+                          const params = new URLSearchParams({
+                            operator: r.operator, flightRef: r.flightNo,
+                            description: `${r.handlingType} – ${r.route}`,
+                            civilAviation: String(r.civilAviationFee), handling: String(r.handlingFee),
+                            airportCharges: String(r.airportCharge),
+                          });
+                          navigate(`/invoices?${params.toString()}`);
+                        }} className="text-success hover:text-success/80" title="Generate Invoice"><Receipt size={13} /></button>
+                      )}
                       <button onClick={() => startEdit(r)} className="text-info hover:text-info/80"><Pencil size={13} /></button>
                       <button onClick={() => deleteReport(r.id!)} className="text-destructive hover:text-destructive/80"><Trash2 size={13} /></button>
                     </div>
