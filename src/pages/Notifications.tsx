@@ -153,7 +153,7 @@ export default function NotificationsPage() {
     if (!prefs) return;
     const updated = { ...prefs, [key]: value };
     setPrefs(updated);
-    await supabase.from("notification_preferences").update({ [key]: value }).eq("id", prefs.id);
+    await supabase.from("notification_preferences").update({ [key]: value } as any).eq("id", prefs.id);
     toast.success("Preference updated");
   };
 
