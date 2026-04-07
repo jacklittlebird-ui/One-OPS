@@ -371,14 +371,14 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                     </select>
                   </FormField>
                   <FormField label="Route"><input className={inputCls} value={data.route || ""} onChange={e => set("route", e.target.value)} placeholder="ORY/CAI/ORY" /></FormField>
-                  <FormField label="Reg No"><input className={inputCls} value={data.registration || ""} onChange={e => set("registration", e.target.value)} placeholder="FGZHM" /></FormField>
-                  <FormField label="A/C Type"><input className={inputCls} value={data.aircraftType || ""} onChange={e => set("aircraftType", e.target.value)} placeholder="B737-800" /></FormField>
-                  <FormField label="MTOW"><input className={inputCls} value={data.mtow || ""} onChange={e => set("mtow", e.target.value)} placeholder="77" /></FormField>
+                  <FormField label="Reg No"><input className={inputCls} value={data.registration || ""} onChange={e => set("registration", e.target.value)} /></FormField>
+                  <FormField label="A/C Type"><input className={inputCls} value={data.aircraftType || ""} onChange={e => set("aircraftType", e.target.value)} /></FormField>
+                  <FormField label="MTOW"><input className={inputCls} value={data.mtow || ""} onChange={e => set("mtow", e.target.value)} /></FormField>
                   <FormField label="Config"><input type="number" className={inputCls} value={data.paxInAdultI || ""} onChange={e => set("paxInAdultI", +e.target.value)} /></FormField>
-                  <FormField label="STA"><input type="time" className={inputCls} value={data.sta || ""} onChange={e => set("sta", e.target.value)} /></FormField>
-                  <FormField label="STD"><input type="time" className={inputCls} value={data.std || ""} onChange={e => set("std", e.target.value)} /></FormField>
-                  <FormField label="Arrival Date"><input type="date" className={inputCls} value={data.arrivalDate || ""} onChange={e => set("arrivalDate", e.target.value)} /></FormField>
-                  <FormField label="Departure Date"><input type="date" className={inputCls} value={data.departureDate || ""} onChange={e => set("departureDate", e.target.value)} /></FormField>
+                  <TimeField label="STA" value={data.sta || ""} onChange={v => set("sta", v)} />
+                  <TimeField label="STD" value={data.std || ""} onChange={v => set("std", v)} />
+                  <DatePickerField label="Arrival Date" value={data.arrivalDate || ""} onChange={v => set("arrivalDate", v)} />
+                  <DatePickerField label="Departure Date" value={data.departureDate || ""} onChange={v => set("departureDate", v)} />
                   <FormField label="Handling Type">
                     <select className={selectCls} value={data.handlingType} onChange={e => set("handlingType", e.target.value)}>
                       {handlingTypes.map(h => <option key={h}>{h}</option>)}
