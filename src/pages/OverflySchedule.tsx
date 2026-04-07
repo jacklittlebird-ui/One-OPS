@@ -147,7 +147,6 @@ export default function OverflySchedulePage() {
             </Popover>
             {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(""); setDateTo(""); setPage(1); }} className="text-xs text-destructive hover:underline ml-1">Clear</button>}
           </div>
-          </select>
         </div>
 
         <div className="overflow-x-auto">
