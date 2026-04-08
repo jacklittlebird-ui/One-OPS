@@ -304,25 +304,12 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
       d.totalParkingHours = 0;
       civTotal += d.housingCharge;
     } else if (groundMin > 2 * 60) {
-      // If parking starts at night, ALL billable hours are charged as night
-      const parkingStartsAtNight = isNightTime(d.co || "", d.arrivalDate || "");
-
+      // Calculate day/night overlap in minutes, then round up each to whole hours
       const nightParkMin = calcParkingNightMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
       const dayParkMin = calcParkingDayMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
-      const totalBillableMin = nightParkMin + dayParkMin;
-
-      let nightHours: number;
-      let dayHours: number;
-
-      if (parkingStartsAtNight) {
-        // All parking hours counted as night
-        nightHours = totalBillableMin > 0 ? Math.ceil(totalBillableMin / 60) : 0;
-        dayHours = 0;
-      } else {
-        nightHours = nightParkMin > 0 ? Math.ceil(nightParkMin / 60) : 0;
-        dayHours = dayParkMin > 0 ? Math.ceil(dayParkMin / 60) : 0;
-      }
-
+      const nightHours = nightParkMin > 0 ? Math.ceil(nightParkMin / 60) : 0;
+      const dayHours = dayParkMin > 0 ? Math.ceil(dayParkMin / 60) : 0;
+      // Charge = dayHours × day_rate + nightHours × night_rate
       d.parkingCharge = +((dayHours * charge.parking_day) + (nightHours * charge.parking_night)).toFixed(2);
       d.parkingNightHours = nightHours;
       d.parkingDayHours = dayHours;
