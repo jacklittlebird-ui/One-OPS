@@ -70,6 +70,7 @@ export type Database = {
       }
       aircrafts: {
         Row: {
+          ac_type: string
           airline: string
           certificate_no: string
           created_at: string
@@ -84,6 +85,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ac_type?: string
           airline?: string
           certificate_no?: string
           created_at?: string
@@ -98,6 +100,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ac_type?: string
           airline?: string
           certificate_no?: string
           created_at?: string

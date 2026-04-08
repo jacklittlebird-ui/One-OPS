@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Search, Plus, Trash2, Upload, Download, PlaneTakeoff, Wrench,
   Pencil, Database, ChevronLeft, ChevronRight, CheckCircle, XCircle, Layers,
-  Plane, Building2, Eye, AlertTriangle, Calendar
+  Plane, Building2, Eye, AlertTriangle, Calendar, Tag
 } from "lucide-react";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,12 +18,19 @@ import * as XLSX from "xlsx";
 
 const PAGE_SIZE = 25;
 
-type AircraftRow = { id: string; registration: string; type: string; airline: string; model: string; mtow: number; seats: number; certificate_no: string; issue_date: string; status: string };
+const CATEGORIES = ["Passenger", "Military", "Private", "Cargo", "Ambulance"] as const;
 
-const statusBadge = (s: string) => {
-  if (s === "Operational") return <Badge variant="default" className="gap-1"><CheckCircle size={12} />{s}</Badge>;
-  if (s === "Maintenance") return <Badge className="gap-1 bg-warning/15 text-warning border-warning/30"><Wrench size={12} />{s}</Badge>;
-  return <Badge variant="destructive" className="gap-1"><XCircle size={12} />{s}</Badge>;
+type AircraftRow = { id: string; registration: string; type: string; airline: string; model: string; mtow: number; seats: number; certificate_no: string; issue_date: string; status: string; ac_type: string };
+
+const categoryBadge = (s: string) => {
+  switch (s) {
+    case "Passenger": return <Badge variant="default" className="gap-1"><CheckCircle size={12} />{s}</Badge>;
+    case "Military": return <Badge className="gap-1 bg-destructive/15 text-destructive border-destructive/30">{s}</Badge>;
+    case "Private": return <Badge className="gap-1 bg-info/15 text-info border-info/30">{s}</Badge>;
+    case "Cargo": return <Badge className="gap-1 bg-warning/15 text-warning border-warning/30">{s}</Badge>;
+    case "Ambulance": return <Badge className="gap-1 bg-success/15 text-success border-success/30">{s}</Badge>;
+    default: return <Badge variant="outline" className="gap-1">{s || "—"}</Badge>;
+  }
 };
 
 export default function AircraftsPage() {
@@ -31,13 +38,13 @@ export default function AircraftsPage() {
   const { data, isLoading, add, update, remove } = useSupabaseTable<AircraftRow>("aircrafts", { orderBy: "registration", ascending: true });
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [airlineFilter, setAirlineFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<AircraftRow | null>(null);
   const [inspectItem, setInspectItem] = useState<AircraftRow | null>(null);
-  const [form, setForm] = useState({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Operational" });
+  const [form, setForm] = useState({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Passenger", ac_type: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const types = useMemo(() => [...new Set(data.map(d => d.type).filter(Boolean))].sort(), [data]);
@@ -46,22 +53,22 @@ export default function AircraftsPage() {
   const filtered = useMemo(() => {
     let result = data;
     if (typeFilter !== "all") result = result.filter(r => r.type === typeFilter);
-    if (statusFilter !== "all") result = result.filter(r => r.status === statusFilter);
+    if (categoryFilter !== "all") result = result.filter(r => r.status === categoryFilter);
     if (airlineFilter !== "all") result = result.filter(r => r.airline === airlineFilter);
     if (search) {
       const s = search.toLowerCase();
-      result = result.filter(r => r.registration.toLowerCase().includes(s) || r.model.toLowerCase().includes(s) || r.airline.toLowerCase().includes(s) || r.certificate_no?.toLowerCase().includes(s));
+      result = result.filter(r => r.registration.toLowerCase().includes(s) || r.model.toLowerCase().includes(s) || r.airline.toLowerCase().includes(s) || r.certificate_no?.toLowerCase().includes(s) || r.ac_type?.toLowerCase().includes(s));
     }
     return result;
-  }, [data, typeFilter, statusFilter, airlineFilter, search]);
+  }, [data, typeFilter, categoryFilter, airlineFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const operationalCount = data.filter(d => d.status === "Operational").length;
-  const maintenanceCount = data.filter(d => d.status === "Maintenance").length;
+  const passengerCount = data.filter(d => d.status === "Passenger").length;
+  const cargoCount = data.filter(d => d.status === "Cargo").length;
   const airlinesCount = new Set(data.map(d => d.airline)).size;
 
-  const openAdd = () => { setEditItem(null); setForm({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Operational" }); setDialogOpen(true); };
+  const openAdd = () => { setEditItem(null); setForm({ registration: "", type: "", airline: "", model: "", mtow: 0, seats: 0, certificate_no: "", issue_date: "", status: "Passenger", ac_type: "" }); setDialogOpen(true); };
   const openEdit = (row: AircraftRow) => { setEditItem(row); setForm({ ...row }); setDialogOpen(true); };
 
   const handleSave = async () => {
@@ -81,7 +88,7 @@ export default function AircraftsPage() {
           registration: row["Registration"] || "", type: row["Type"] || "", airline: row["Airline"] || "",
           model: row["Model"] || "", mtow: Number(row["MTOW"] || 0), seats: Number(row["Seats"] || 0),
           certificate_no: row["Certificate No."] || "", issue_date: row["Issue Date"] || null,
-          status: row["Status"] || "Operational",
+          status: row["Category"] || "Passenger", ac_type: row["A/C Type"] || "",
         });
       }
     };
@@ -89,17 +96,16 @@ export default function AircraftsPage() {
   }, [add]);
 
   const handleExport = () => {
-    const ws = XLSX.utils.json_to_sheet(filtered.map(r => ({ Registration: r.registration, Type: r.type, Airline: r.airline, Model: r.model, "MTOW (T)": r.mtow, Seats: r.seats, "Certificate No.": r.certificate_no, "Issue Date": r.issue_date, Status: r.status })));
+    const ws = XLSX.utils.json_to_sheet(filtered.map(r => ({ Registration: r.registration, Type: r.type, Airline: r.airline, Model: r.model, "MTOW (T)": r.mtow, Seats: r.seats, "Certificate No.": r.certificate_no, "Issue Date": r.issue_date, Category: r.status, "A/C Type": r.ac_type })));
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Aircrafts"); XLSX.writeFile(wb, "aircrafts.xlsx");
   };
 
-  // Certificate expiry check
   const isExpiringSoon = (date: string) => {
     if (!date) return false;
     const d = new Date(date);
     const now = new Date();
     const diff = d.getTime() - now.getTime();
-    return diff > 0 && diff < 90 * 24 * 60 * 60 * 1000; // 90 days
+    return diff > 0 && diff < 90 * 24 * 60 * 60 * 1000;
   };
 
   if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
@@ -130,11 +136,11 @@ export default function AircraftsPage() {
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-4">
           <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center"><CheckCircle className="text-success" size={20} /></div>
-          <div><div className="text-xl md:text-2xl font-bold text-foreground">{operationalCount}</div><div className="text-xs text-muted-foreground">Operational</div></div>
+          <div><div className="text-xl md:text-2xl font-bold text-foreground">{passengerCount}</div><div className="text-xs text-muted-foreground">Passenger</div></div>
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-4">
-          <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center"><Wrench className="text-warning" size={20} /></div>
-          <div><div className="text-xl md:text-2xl font-bold text-foreground">{maintenanceCount}</div><div className="text-xs text-muted-foreground">In Maintenance</div></div>
+          <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center"><Tag className="text-warning" size={20} /></div>
+          <div><div className="text-xl md:text-2xl font-bold text-foreground">{cargoCount}</div><div className="text-xs text-muted-foreground">Cargo</div></div>
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-4">
           <div className="h-10 w-10 rounded-lg bg-info/10 flex items-center justify-center"><Layers className="text-info" size={20} /></div>
@@ -150,7 +156,7 @@ export default function AircraftsPage() {
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
-          <Input placeholder="Search by registration, model, airline, or certificate…" className="pl-9" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+          <Input placeholder="Search by registration, model, airline, A/C type…" className="pl-9" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
         <Select value={airlineFilter} onValueChange={v => { setAirlineFilter(v); setPage(1); }}>
           <SelectTrigger className="w-44"><SelectValue placeholder="All Airlines" /></SelectTrigger>
@@ -160,9 +166,12 @@ export default function AircraftsPage() {
           <SelectTrigger className="w-36"><SelectValue placeholder="All Types" /></SelectTrigger>
           <SelectContent><SelectItem value="all">All Types</SelectItem>{types.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Status</SelectItem><SelectItem value="Operational">Operational</SelectItem><SelectItem value="Maintenance">Maintenance</SelectItem><SelectItem value="Grounded">Grounded</SelectItem></SelectContent>
+        <Select value={categoryFilter} onValueChange={v => { setCategoryFilter(v); setPage(1); }}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="All Categories" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
         </Select>
       </div>
 
@@ -174,19 +183,20 @@ export default function AircraftsPage() {
               <TableRow>
                 <TableHead>Registration</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>A/C Type</TableHead>
                 <TableHead>Airline</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>MTOW (T)</TableHead>
                 <TableHead>Seats</TableHead>
                 <TableHead>Certificate</TableHead>
                 <TableHead>Issue Date</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead className="w-28">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pageData.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-12">
+                <TableRow><TableCell colSpan={11} className="text-center py-12">
                   <Database size={40} className="mx-auto text-muted-foreground/40 mb-3" />
                   <p className="font-semibold text-foreground">No Aircraft Found</p>
                 </TableCell></TableRow>
@@ -194,6 +204,7 @@ export default function AircraftsPage() {
                 <TableRow key={row.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setInspectItem(row)}>
                   <TableCell className="font-mono font-semibold text-foreground">{row.registration}</TableCell>
                   <TableCell><Badge variant="outline" className="text-xs">{row.type || "—"}</Badge></TableCell>
+                  <TableCell>{row.ac_type || "—"}</TableCell>
                   <TableCell>{row.airline}</TableCell>
                   <TableCell>{row.model}</TableCell>
                   <TableCell className="font-mono">{row.mtow}</TableCell>
@@ -203,7 +214,7 @@ export default function AircraftsPage() {
                     {row.issue_date || "—"}
                     {isExpiringSoon(row.issue_date) && <AlertTriangle size={12} className="inline ml-1 text-warning" />}
                   </TableCell>
-                  <TableCell>{statusBadge(row.status)}</TableCell>
+                  <TableCell>{categoryBadge(row.status)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       <Button size="icon" variant="ghost" onClick={() => setInspectItem(row)}><Eye size={14} /></Button>
@@ -239,22 +250,25 @@ export default function AircraftsPage() {
               <div><label className="text-sm font-medium text-foreground mb-1 block">Type</label><Input placeholder="NB / WB" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">A/C Type</label><Input placeholder="B737-800" value={form.ac_type} onChange={e => setForm({ ...form, ac_type: e.target.value })} /></div>
               <div><label className="text-sm font-medium text-foreground mb-1 block">Airline</label><Input value={form.airline} onChange={e => setForm({ ...form, airline: e.target.value })} /></div>
-              <div><label className="text-sm font-medium text-foreground mb-1 block">Model</label><Input placeholder="B737-800" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Model</label><Input placeholder="737-800" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} /></div>
               <div><label className="text-sm font-medium text-foreground mb-1 block">MTOW (Tonnes)</label><Input type="number" step="0.1" value={form.mtow} onChange={e => setForm({ ...form, mtow: +e.target.value })} /></div>
-              <div><label className="text-sm font-medium text-foreground mb-1 block">Seats</label><Input type="number" value={form.seats} onChange={e => setForm({ ...form, seats: +e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Seats</label><Input type="number" value={form.seats} onChange={e => setForm({ ...form, seats: +e.target.value })} /></div>
               <div><label className="text-sm font-medium text-foreground mb-1 block">Certificate No.</label><Input value={form.certificate_no} onChange={e => setForm({ ...form, certificate_no: e.target.value })} /></div>
-              <div><label className="text-sm font-medium text-foreground mb-1 block">Issue Date</label><Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} /></div>
             </div>
-            <div><label className="text-sm font-medium text-foreground mb-1 block">Status</label>
-              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="Operational">Operational</SelectItem><SelectItem value="Maintenance">Maintenance</SelectItem><SelectItem value="Grounded">Grounded</SelectItem></SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Issue Date</label><Input type="date" value={form.issue_date} onChange={e => setForm({ ...form, issue_date: e.target.value })} /></div>
+              <div><label className="text-sm font-medium text-foreground mb-1 block">Category</label>
+                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
             <Button className="w-full" onClick={handleSave}>{editItem ? "Update Aircraft" : "Add Aircraft"}</Button>
           </div>
@@ -280,12 +294,13 @@ export default function AircraftsPage() {
                     <h3 className="text-lg font-bold text-foreground">{inspectItem.model}</h3>
                     <p className="text-sm text-muted-foreground">{inspectItem.airline} · {inspectItem.type}</p>
                   </div>
-                  {statusBadge(inspectItem.status)}
+                  {categoryBadge(inspectItem.status)}
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="bg-muted/50 rounded-lg p-3"><div className="text-xs text-muted-foreground mb-1">MTOW</div><div className="text-lg font-bold text-foreground">{inspectItem.mtow}T</div></div>
                   <div className="bg-muted/50 rounded-lg p-3"><div className="text-xs text-muted-foreground mb-1">Seats</div><div className="text-lg font-bold text-foreground">{inspectItem.seats}</div></div>
                   <div className="bg-muted/50 rounded-lg p-3"><div className="text-xs text-muted-foreground mb-1">Type</div><div className="text-lg font-bold text-foreground">{inspectItem.type || "—"}</div></div>
+                  <div className="bg-muted/50 rounded-lg p-3"><div className="text-xs text-muted-foreground mb-1">A/C Type</div><div className="text-lg font-bold text-foreground">{inspectItem.ac_type || "—"}</div></div>
                 </div>
               </TabsContent>
               <TabsContent value="technical" className="space-y-4 pt-4">
