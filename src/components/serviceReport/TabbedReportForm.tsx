@@ -291,7 +291,11 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
       d.parkingCharge = 0;
       civTotal += d.housingCharge;
     } else if (groundMin > 2 * 60) {
-      d.parkingCharge = +charge.parking_day.toFixed(2);
+      // Use night or day parking rate based on which has more hours
+      const nightParkMin = calcParkingNightMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
+      const dayParkMin = calcParkingDayMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
+      const parkingRate = nightParkMin >= dayParkMin ? charge.parking_night : charge.parking_day;
+      d.parkingCharge = +parkingRate.toFixed(2);
       d.housingCharge = 0;
       d.housingDays = 0;
       civTotal += d.parkingCharge;
