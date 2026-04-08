@@ -207,8 +207,9 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
   };
 
   const recalcFinancials = (d: Partial<ReportFormData>) => {
-    // Total Foreign Pax OUT
-    d.totalForeignPaxOut = Math.max(0, (d.foreignPaxOut || 0) - (d.egyptianPaxOut || 0));
+    // Total on Board & Total Foreign Pax OUT
+    d.totalDepartingPax = (d.foreignPaxOut || 0) + (d.infantOut || 0);
+    d.totalForeignPaxOut = Math.max(0, d.totalDepartingPax - (d.egyptianPaxOut || 0));
     // Estimated pax bills (always calculate regardless of MTOW)
     const totalOutPax = (d.foreignPaxOut || 0) + (d.egyptianPaxOut || 0) + (d.infantOut || 0);
     d.estimatedForeignBill = +(totalOutPax * 28).toFixed(2);
