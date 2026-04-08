@@ -11,7 +11,7 @@ import {
   CateringLineItem, HotacLineItem, FuelLineItem, DelayEntry
 } from "./ReportFormTypes";
 import { supabase } from "@/integrations/supabase/client";
-import { generateAllCharges } from "@/data/airportChargesData";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,12 @@ const stationOptions = [
   { name: "Aswan", vendor: "Egyptian Airports" },
 ];
 
-const allCharges = generateAllCharges();
+interface AirportChargeRow {
+  id: string; vendor_name: string; mtow: string;
+  landing_day: number; landing_night: number;
+  parking_day: number; parking_night: number;
+  housing: number; air_navigation: number;
+}
 
 const inputCls = "text-sm border rounded px-2.5 py-2 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground w-full";
 const selectCls = "text-sm border rounded px-2.5 py-2 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full";
@@ -173,6 +178,7 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
 
   type DelayCodeRow = { id: string; code: string; description: string; category: string; responsible: string; impact_level: string; avg_minutes: number; active: boolean };
   const { data: delayCodes } = useSupabaseTable<DelayCodeRow>("delay_codes", { orderBy: "code", ascending: true });
+  const { data: airportCharges } = useSupabaseTable<AirportChargeRow>("airport_charges", { orderBy: "created_at", ascending: true });
 
   const lookupMtowByReg = useCallback(async (reg: string) => {
     if (!reg || reg.length < 2) return;
@@ -225,10 +231,10 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
     const ton = parseInt(tonMatch[1]);
     const station = d.station || "Cairo";
     const vendor = stationOptions.find(s => s.name === station)?.vendor || "Egyptian Airports";
-    const charge = allCharges.find(c => c.vendorName === vendor && c.mtow === `${ton} TON`);
+    const charge = airportCharges.find(c => c.vendor_name === vendor && c.mtow === `${ton} TON`);
     if (!charge) return;
     const isNight = isNightTime(d.td || "", d.arrivalDate || "");
-    const landingFee = isNight ? charge.landingNight : charge.landingDay;
+    const landingFee = isNight ? charge.landing_night : charge.landing_day;
     const groundMin = timeDiffMinutes(d.co || "", d.ob || "");
 
     d.landingCharge = +landingFee.toFixed(2);
@@ -240,7 +246,7 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
       d.parkingCharge = 0;
       civTotal += d.housingCharge;
     } else if (groundMin > 2 * 60) {
-      d.parkingCharge = +charge.parkingDay.toFixed(2);
+      d.parkingCharge = +charge.parking_day.toFixed(2);
       d.housingCharge = 0;
       d.housingDays = 0;
       civTotal += d.parkingCharge;
