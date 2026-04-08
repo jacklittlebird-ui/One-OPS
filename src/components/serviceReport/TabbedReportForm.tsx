@@ -213,6 +213,11 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
     const totalOnBoard = d.totalDepartingPax || 0;
     d.estimatedForeignBill = +(totalOnBoard * 28).toFixed(2);
     d.estimatedLocalBill = +(totalOnBoard * 115).toFixed(2);
+    d.intDeparturePaxTax = +(totalOnBoard * 25).toFixed(2);
+    d.developingSecSysCharge = +(totalOnBoard * 2).toFixed(2);
+    d.sitaCute = +(totalOnBoard * 1).toFixed(2);
+    d.stateResourceDevFee = +(totalOnBoard * 100).toFixed(2);
+    d.policeServiceFee = +(totalOnBoard * 15).toFixed(2);
 
     const mtowStr = d.mtow || "";
     const tonMatch = mtowStr.match(/(\d+)/);
@@ -459,9 +464,14 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
               </div>
               <div>
                 <h3 className="text-sm font-bold text-success uppercase tracking-wider mb-3 border-b pb-2">Estimated Billing (Preview Only)</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Estimated Foreign Pax Bill (USD)"><input type="number" step="0.01" className={inputCls} value={data.estimatedForeignBill || ""} onChange={e => set("estimatedForeignBill", +e.target.value)} /></FormField>
-                  <FormField label="Estimated Local Pax Bill (EGP)"><input type="number" step="0.01" className={inputCls} value={data.estimatedLocalBill || ""} onChange={e => set("estimatedLocalBill", +e.target.value)} /></FormField>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <FormField label="Estimated Foreign Pax Bill (USD)"><input type="number" step="0.01" className={readOnlyCls} value={data.estimatedForeignBill || ""} readOnly /></FormField>
+                  <FormField label="Estimated Local Pax Bill (EGP)"><input type="number" step="0.01" className={readOnlyCls} value={data.estimatedLocalBill || ""} readOnly /></FormField>
+                  <FormField label="Int. Departure Pax Taxes (USD)"><input type="number" step="0.01" className={readOnlyCls} value={data.intDeparturePaxTax || ""} readOnly /></FormField>
+                  <FormField label="Developing Sec. Sys Charges (USD)"><input type="number" step="0.01" className={readOnlyCls} value={data.developingSecSysCharge || ""} readOnly /></FormField>
+                  <FormField label="SITA Cute (USD)"><input type="number" step="0.01" className={readOnlyCls} value={data.sitaCute || ""} readOnly /></FormField>
+                  <FormField label="State Resource Dev. Fees (EGP)"><input type="number" step="0.01" className={readOnlyCls} value={data.stateResourceDevFee || ""} readOnly /></FormField>
+                  <FormField label="Police Service Fees (EGP)"><input type="number" step="0.01" className={readOnlyCls} value={data.policeServiceFee || ""} readOnly /></FormField>
                 </div>
               </div>
               <div>
