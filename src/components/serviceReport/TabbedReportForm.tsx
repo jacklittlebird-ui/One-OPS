@@ -560,8 +560,8 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                     </span>
                   </FormField>
                   <FormField label="Ground Time (HH:MM)"><input className={readOnlyCls} value={data.groundTime || calcGroundTime(data.co || "", data.ob || "")} readOnly /></FormField>
-                  <FormField label="Parking Day Hours"><input type="number" step="0.01" className={inputCls} value={data.parkingDayHours || ""} onChange={e => set("parkingDayHours", +e.target.value)} /></FormField>
-                  <FormField label="Parking Night Hours"><input type="number" step="0.01" className={inputCls} value={data.parkingNightHours || ""} onChange={e => set("parkingNightHours", +e.target.value)} /></FormField>
+                  <FormField label="Parking Day Hours"><input className={readOnlyCls} value={(() => { const mins = Math.round((data.parkingDayHours || 0) * 60); return mins > 0 ? `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, "0")}` : ""; })()} readOnly /></FormField>
+                  <FormField label="Parking Night Hours"><input className={readOnlyCls} value={(() => { const mins = Math.round((data.parkingNightHours || 0) * 60); return mins > 0 ? `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, "0")}` : ""; })()} readOnly /></FormField>
                   <FormField label="Total Parking Time (Hrs)"><input className={readOnlyCls} value={(() => { const gt = data.groundTime || calcGroundTime(data.co || "", data.ob || ""); if (!gt) return ""; const [h, m] = gt.split(":").map(Number); if (isNaN(h) || isNaN(m)) return ""; const totalMin = Math.max(0, h * 60 + m - 120); return `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, "0")}`; })()} readOnly /></FormField>
                   <FormField label="Housing (Days)"><input type="number" step="0.01" className={readOnlyCls} value={data.housingDays || ""} readOnly /></FormField>
                 </div>
