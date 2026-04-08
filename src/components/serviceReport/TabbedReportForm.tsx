@@ -304,11 +304,13 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
       d.totalParkingHours = 0;
       civTotal += d.housingCharge;
     } else if (groundMin > 2 * 60) {
-      // Use night or day parking rate based on which has more hours
+      // Calculate day/night overlap in minutes, then round up each to whole hours
       const nightParkMin = calcParkingNightMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
       const dayParkMin = calcParkingDayMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
-      const parkingRate = nightParkMin >= dayParkMin ? charge.parking_night : charge.parking_day;
-      d.parkingCharge = +parkingRate.toFixed(2);
+      const nightHours = nightParkMin > 0 ? Math.ceil(nightParkMin / 60) : 0;
+      const dayHours = dayParkMin > 0 ? Math.ceil(dayParkMin / 60) : 0;
+      // Charge = dayHours × day_rate + nightHours × night_rate
+      d.parkingCharge = +((dayHours * charge.parking_day) + (nightHours * charge.parking_night)).toFixed(2);
       d.housingCharge = 0;
       d.housingDays = 0;
       civTotal += d.parkingCharge;
@@ -320,15 +322,16 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
     d.civilAviationFee = +civTotal.toFixed(2);
     d.airportCharge = +landingFee.toFixed(2);
 
-    // Parking hours = ground time minus 2 hours (HH:MM)
+    // Parking hours calculation — overlap with seasonal day/night windows
     if (groundMin > 0) {
-      const parkingMin = Math.max(0, groundMin - 120);
-      d.totalParkingHours = parkingMin / 60;
-      // Night hours = overlap of parking window with seasonal night window
       const nightMin = calcParkingNightMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
       const dayMin = calcParkingDayMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
-      d.parkingNightHours = +(nightMin / 60).toFixed(2);
-      d.parkingDayHours = +(dayMin / 60).toFixed(2);
+      // Round up: each started hour counts
+      const nightHrs = nightMin > 0 ? Math.ceil(nightMin / 60) : 0;
+      const dayHrs = dayMin > 0 ? Math.ceil(dayMin / 60) : 0;
+      d.parkingNightHours = nightHrs;
+      d.parkingDayHours = dayHrs;
+      d.totalParkingHours = nightHrs + dayHrs;
     }
 
     d.totalCost = +((d.civilAviationFee || 0) + (d.handlingFee || 0) + (d.airportCharge || 0)
