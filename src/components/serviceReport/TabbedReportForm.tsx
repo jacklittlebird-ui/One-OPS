@@ -306,7 +306,11 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
     if (groundMin > 0) {
       const parkingMin = Math.max(0, groundMin - 120);
       d.totalParkingHours = parkingMin / 60;
-      d.parkingNightHours = parkingMin / 60;
+      // Night hours = overlap of parking window with seasonal night window
+      const nightMin = calcParkingNightMinutes(d.co || "", d.ob || "", d.arrivalDate || "");
+      d.parkingNightHours = +(nightMin / 60).toFixed(2);
+      d.parkingDayHours = +((parkingMin - nightMin) / 60).toFixed(2);
+      if (d.parkingDayHours < 0) d.parkingDayHours = 0;
     }
 
     d.totalCost = +((d.civilAviationFee || 0) + (d.handlingFee || 0) + (d.airportCharge || 0)
