@@ -258,11 +258,11 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
     d.civilAviationFee = +civTotal.toFixed(2);
     d.airportCharge = +landingFee.toFixed(2);
 
-    // Parking hours = ground time minus 2 hours
+    // Parking hours = ground time minus 2 hours (HH:MM)
     if (groundMin > 0) {
       const parkingMin = Math.max(0, groundMin - 120);
-      d.totalParkingHours = +(parkingMin / 60).toFixed(2);
-      d.parkingNightHours = +(parkingMin / 60).toFixed(2);
+      d.totalParkingHours = parkingMin / 60;
+      d.parkingNightHours = parkingMin / 60;
     }
 
     d.totalCost = +((d.civilAviationFee || 0) + (d.handlingFee || 0) + (d.airportCharge || 0)
@@ -514,7 +514,7 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="Ground Time (HH:MM)"><input className={readOnlyCls} value={data.groundTime || calcGroundTime(data.co || "", data.ob || "")} readOnly /></FormField>
                   <FormField label="Parking Day Hours"><input type="number" step="0.01" className={inputCls} value={data.parkingDayHours || ""} onChange={e => set("parkingDayHours", +e.target.value)} /></FormField>
                   <FormField label="Parking Night Hours"><input type="number" step="0.01" className={inputCls} value={data.parkingNightHours || ""} onChange={e => set("parkingNightHours", +e.target.value)} /></FormField>
-                  <FormField label="Total Parking Time (Hrs)"><input type="number" step="0.01" className={readOnlyCls} value={data.totalParkingHours || ""} readOnly /></FormField>
+                  <FormField label="Total Parking Time (Hrs)"><input className={readOnlyCls} value={(() => { const gt = data.groundTime || calcGroundTime(data.co || "", data.ob || ""); if (!gt) return ""; const [h, m] = gt.split(":").map(Number); if (isNaN(h) || isNaN(m)) return ""; const totalMin = Math.max(0, h * 60 + m - 120); return `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, "0")}`; })()} readOnly /></FormField>
                   <FormField label="Housing (Days)"><input type="number" step="0.01" className={readOnlyCls} value={data.housingDays || ""} readOnly /></FormField>
                 </div>
               </div>
