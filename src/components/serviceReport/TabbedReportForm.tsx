@@ -11,7 +11,7 @@ import {
   CateringLineItem, HotacLineItem, FuelLineItem, DelayEntry
 } from "./ReportFormTypes";
 import { supabase } from "@/integrations/supabase/client";
-import { generateAllCharges } from "@/data/airportChargesData";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
