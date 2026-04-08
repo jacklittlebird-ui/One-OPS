@@ -193,11 +193,11 @@ function calcParkingNightMinutes(co: string, ob: string, arrivalDate: string): n
 function calcParkingDayMinutes(co: string, ob: string, arrivalDate: string): number {
   const month = new Date(arrivalDate).getMonth() + 1;
   if (month >= 4 && month <= 10) {
-    // Day = 03:00 to 17:00
-    return calcOverlapMinutes(co, ob, arrivalDate, 3, 0, 17, 0, false);
+    // Day = 03:01 to 16:59
+    return calcOverlapMinutes(co, ob, arrivalDate, 3, 1, 16, 59, false);
   }
-  // Day = 04:00 to 16:00
-  return calcOverlapMinutes(co, ob, arrivalDate, 4, 0, 16, 0, false);
+  // Day = 04:01 to 15:59
+  return calcOverlapMinutes(co, ob, arrivalDate, 4, 1, 15, 59, false);
 }
 
 interface Props {
