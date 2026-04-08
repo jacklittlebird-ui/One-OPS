@@ -36,13 +36,10 @@ export default function LoginPage() {
         <div className="absolute bottom-10 -right-16 w-96 h-96 rounded-full bg-white/5" />
         <div className="absolute top-1/3 right-20 w-40 h-40 rounded-full bg-white/[0.03]" />
 
-        <div className="relative z-10 px-12 max-w-lg text-center space-y-8">
-          <div className="inline-flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-sm">
-              <img src={oneOpsLogo} alt="One OPS" className="w-9 h-9 object-contain" />
-            </div>
-            <span className="text-4xl font-extrabold text-white tracking-tight">One OPS</span>
-          </div>
+         <div className="relative z-10 px-12 max-w-lg text-center space-y-8">
+           <div className="inline-flex items-center gap-3">
+             <img src={linkAeroVertical} alt="Link Aero" className="h-16 object-contain" />
+           </div>
 
           <p className="text-white/80 text-lg leading-relaxed">
             Integrated Ground Handling & Aviation Operations Platform
@@ -67,9 +64,10 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="w-full max-w-sm">
           {/* Logos */}
-          <div className="flex flex-col items-center gap-4 mb-8">
-            <img src={oneOpsLogo} alt="One OPS" className="w-16 h-16 object-contain" />
-            <img src={linkAeroVertical} alt="Link Aero" className="h-24 object-contain" />
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <img src={oneOpsLogo} alt="One OPS" className="w-14 h-14 object-contain" />
+            <div className="w-px h-12 bg-border" />
+            <img src={linkAeroVertical} alt="Link Aero" className="h-14 object-contain" />
           </div>
 
           {/* Mobile-only subtitle */}
