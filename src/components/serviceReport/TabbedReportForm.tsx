@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { format } from "date-fns";
 import {
   FileBarChart2, X, Plane, Clock, Users, DollarSign, UtensilsCrossed,
@@ -322,7 +322,37 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
       + (d.fuelCharge || 0) + (d.cateringCharge || 0) + (d.hotacCharge || 0)).toFixed(2);
   };
 
-  // Delay handlers
+  useEffect(() => {
+    if (!airportCharges.length) return;
+    const recalculated = { ...data };
+    recalcFinancials(recalculated);
+
+    const numericFields: (keyof ReportFormData)[] = [
+      "landingCharge",
+      "parkingCharge",
+      "housingCharge",
+      "housingDays",
+      "civilAviationFee",
+      "airportCharge",
+      "totalParkingHours",
+      "parkingNightHours",
+      "parkingDayHours",
+      "totalCost",
+      "totalDepartingPax",
+      "totalForeignPaxOut",
+      "estimatedForeignBill",
+      "estimatedLocalBill",
+      "intDeparturePaxTax",
+      "developingSecSysCharge",
+      "sitaCute",
+      "stateResourceDevFee",
+      "policeServiceFee",
+    ];
+
+    const hasChanges = numericFields.some((field) => (recalculated[field] || 0) !== (data[field] || 0));
+    if (hasChanges) onChange(recalculated);
+  }, [airportCharges, data, onChange]);
+
   const delays = data.delays || [];
   const setDelay = (index: number, field: keyof DelayEntry, val: any) => {
     const newDelays = [...delays];
