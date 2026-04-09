@@ -6,6 +6,7 @@ import {
   Plane, Building2, Eye, AlertTriangle, Calendar, Tag
 } from "lucide-react";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
+import { useReadOnly } from "@/hooks/useReadOnly";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
