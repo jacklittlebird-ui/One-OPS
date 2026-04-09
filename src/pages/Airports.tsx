@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
+import { useReadOnly } from "@/hooks/useReadOnly";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,7 @@ type CountryRow = { id: string; name: string; code: string; };
 const PAGE_SIZE = 20;
 
 export default function AirportsPage() {
+  const readOnly = useReadOnly();
   const { data, isLoading, add, update, remove } = useSupabaseTable<AirportRow>("airports", { orderBy: "name", ascending: true });
   const { data: countries } = useQuery({
     queryKey: ["countries"],
@@ -102,8 +104,9 @@ export default function AirportsPage() {
           <p className="text-muted-foreground text-sm">Manage operating airports, terminals & ground infrastructure</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload size={14} className="mr-1" /> Import</Button>
+          {!readOnly && <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload size={14} className="mr-1" /> Import</Button>}
           <Button variant="outline" size="sm" onClick={handleExport}><Download size={14} className="mr-1" /> Export</Button>
+          {!readOnly && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild><Button onClick={openAdd}><Plus size={16} className="mr-1" /> Add Airport</Button></DialogTrigger>
             <DialogContent className="sm:max-w-lg">
@@ -151,6 +154,7 @@ export default function AirportsPage() {
               </div>
             </DialogContent>
           </Dialog>
+          )}
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleUpload} />
         </div>
       </div>
@@ -220,8 +224,8 @@ export default function AirportsPage() {
                   <TableCell>
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       <Button size="icon" variant="ghost" onClick={() => setInspectItem(a)}><Eye size={14} /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(a)}><Pencil size={14} /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(a.id)}><Trash2 size={14} /></Button>
+                      {!readOnly && <Button size="icon" variant="ghost" onClick={() => openEdit(a)}><Pencil size={14} /></Button>}
+                      {!readOnly && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(a.id)}><Trash2 size={14} /></Button>}
                     </div>
                   </TableCell>
                 </TableRow>

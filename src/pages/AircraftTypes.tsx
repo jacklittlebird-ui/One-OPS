@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Search, Plane, Download } from "lucide-react";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
+import { useReadOnly } from "@/hooks/useReadOnly";
 import { exportToExcel } from "@/lib/exportExcel";
 
 const catCfg: Record<string, string> = { NB: "bg-info/15 text-info", WB: "bg-primary/15 text-primary", SH: "bg-destructive/15 text-destructive", RJ: "bg-warning/15 text-warning", TP: "bg-success/15 text-success" };
@@ -9,6 +10,7 @@ const catLabel: Record<string, string> = { NB: "Narrow Body", WB: "Wide Body", S
 type ATRow = { id: string; icao: string; iata: string; name: string; category: string; mtow: number; seats: string };
 
 export default function AircraftTypesPage() {
+  const readOnly = useReadOnly();
   const { data, isLoading } = useSupabaseTable<ATRow>("aircraft_types_ref", { orderBy: "icao", ascending: true });
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");

@@ -6,6 +6,7 @@ import {
   Plane, FileText, Eye, Mail, Phone
 } from "lucide-react";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
+import { useReadOnly } from "@/hooks/useReadOnly";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ const statusBadge = (s: string) => {
 
 export default function AirlinesPage() {
   const navigate = useNavigate();
+  const readOnly = useReadOnly();
   const { data, isLoading, add, update, remove } = useSupabaseTable<AirlineRow>("airlines", { orderBy: "name", ascending: true });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -104,9 +106,9 @@ export default function AirlinesPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate("/flight-schedule")}><Plane size={14} className="mr-1" /> Flights</Button>
           <Button variant="outline" size="sm" onClick={() => navigate("/contracts")}><FileText size={14} className="mr-1" /> Contracts</Button>
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload size={14} className="mr-1" /> Import</Button>
+          {!readOnly && <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload size={14} className="mr-1" /> Import</Button>}
           <Button variant="outline" size="sm" onClick={handleExport}><Download size={14} className="mr-1" /> Export</Button>
-          <Button onClick={openAdd}><Plus size={16} className="mr-1" /> Add Airline</Button>
+          {!readOnly && <Button onClick={openAdd}><Plus size={16} className="mr-1" /> Add Airline</Button>}
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleUpload} />
         </div>
       </div>
@@ -188,8 +190,8 @@ export default function AirlinesPage() {
                   <TableCell>
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       <Button size="icon" variant="ghost" onClick={() => setInspectItem(row)}><Eye size={14} /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(row)}><Pencil size={14} /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(row.id)}><Trash2 size={14} /></Button>
+                      {!readOnly && <Button size="icon" variant="ghost" onClick={() => openEdit(row)}><Pencil size={14} /></Button>}
+                      {!readOnly && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(row.id)}><Trash2 size={14} /></Button>}
                     </div>
                   </TableCell>
                 </TableRow>
