@@ -10,6 +10,7 @@ const catLabel: Record<string, string> = { NB: "Narrow Body", WB: "Wide Body", S
 type ATRow = { id: string; icao: string; iata: string; name: string; category: string; mtow: number; seats: string };
 
 export default function AircraftTypesPage() {
+  const readOnly = useReadOnly();
   const { data, isLoading } = useSupabaseTable<ATRow>("aircraft_types_ref", { orderBy: "icao", ascending: true });
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");

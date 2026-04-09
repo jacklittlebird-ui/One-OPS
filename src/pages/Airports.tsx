@@ -224,8 +224,8 @@ export default function AirportsPage() {
                   <TableCell>
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       <Button size="icon" variant="ghost" onClick={() => setInspectItem(a)}><Eye size={14} /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(a)}><Pencil size={14} /></Button>
-                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(a.id)}><Trash2 size={14} /></Button>
+                      {!readOnly && <Button size="icon" variant="ghost" onClick={() => openEdit(a)}><Pencil size={14} /></Button>}
+                      {!readOnly && <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(a.id)}><Trash2 size={14} /></Button>}
                     </div>
                   </TableCell>
                 </TableRow>
