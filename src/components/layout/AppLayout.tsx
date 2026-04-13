@@ -3,11 +3,11 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="flex min-h-screen">
@@ -19,10 +19,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </SheetContent>
         </Sheet>
       ) : (
-        <Sidebar />
+        <Sidebar collapsed={sidebarCollapsed} />
       )}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined} />
+        <Header
+          onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={!isMobile ? () => setSidebarCollapsed(c => !c) : undefined}
+        />
         <main className="flex-1 p-3 md:p-6 overflow-auto">{children}</main>
       </div>
     </div>
