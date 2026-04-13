@@ -46,6 +46,7 @@ import AirlineIncentivesPage from "./pages/AirlineIncentives";
 import UsersPage from "./pages/Users";
 import NotificationsPage from "./pages/Notifications";
 import SettingsPage from "./pages/Settings";
+import AuditLogPage from "./pages/AuditLog";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ function AppRoutes() {
       <Route path="/users" element={<ProtectedRoute><AppLayout><UsersPage /></AppLayout></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><AppLayout><NotificationsPage /></AppLayout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
+      <Route path="/audit-log" element={<ProtectedRoute><AppLayout><AuditLogPage /></AppLayout></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
