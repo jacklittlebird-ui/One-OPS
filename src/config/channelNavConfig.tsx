@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, Plane, Calculator, FileText, Utensils, DollarSign,
-  Shield, AlertTriangle, MoreHorizontal, FileBarChart2,
+  Shield, AlertTriangle, MoreHorizontal, FileBarChart2, ScrollText,
   ShieldCheck, Users, Bell, Settings, ClipboardCheck, Building2,
   Receipt, CreditCard, Eye
 } from "lucide-react";
@@ -249,6 +249,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
     { label: "NOTIFICATIONS", icon: <Bell size={18} />, path: "/notifications" },
     { label: "SETTINGS", icon: <Settings size={18} />, path: "/settings" },
     { label: "USERS", icon: <Users size={18} />, path: "/users" },
+    { label: "AUDIT LOG", icon: <ScrollText size={18} />, path: "/audit-log" },
   ],
 };
 
