@@ -55,6 +55,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
       label: "REPORTING", icon: <FileBarChart2 size={18} />, collapsible: true,
       children: [
         { label: "Service Report", path: "/service-report" },
+        { label: "Security Reports", path: "/security-service-reports" },
         { label: "Irregularity Reports", path: "/irregularity-reports" },
         { label: "Lost & Found", path: "/lost-found" },
         { label: "Delay Codes", path: "/delay-codes" },
