@@ -328,7 +328,48 @@ export default function InvoicesPage() {
     status: inv.status, notes: inv.notes,
   });
 
-  const clearFilters = () => { setStatusFilter("All"); setTypeFilter("All"); setCurrencyFilter("All"); setDateFrom(""); setDateTo(""); };
+  // Billing preview: group completed dispatches by airline+station for the month
+  const billingPreviewData = useMemo(() => {
+    const completed = dispatches.filter((d: any) => {
+      const matchMonth = d.flight_date?.startsWith(billingMonth);
+      const matchStation = billingStation === "All" || d.station === billingStation;
+      return d.status === "Completed" && matchMonth && matchStation;
+    });
+    const grouped: Record<string, { airline: string; station: string; flights: number; baseFees: number; serviceCharges: number; overtime: number; total: number; items: any[] }> = {};
+    completed.forEach((d: any) => {
+      const key = `${d.airline}__${d.station}`;
+      if (!grouped[key]) grouped[key] = { airline: d.airline, station: d.station, flights: 0, baseFees: 0, serviceCharges: 0, overtime: 0, total: 0, items: [] };
+      grouped[key].flights++;
+      grouped[key].baseFees += d.base_fee || 0;
+      grouped[key].serviceCharges += d.service_rate || 0;
+      grouped[key].overtime += d.overtime_charge || 0;
+      grouped[key].total += d.total_charge || 0;
+      grouped[key].items.push(d);
+    });
+    return Object.values(grouped);
+  }, [dispatches, billingMonth, billingStation]);
+
+  const generateInvoiceFromBilling = async (group: typeof billingPreviewData[0]) => {
+    const inv: Partial<InvoiceRow> = {
+      invoice_no: `LNK-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      date: new Date().toISOString().slice(0, 10),
+      due_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+      operator: group.airline,
+      station: group.station,
+      billing_period: billingMonth,
+      handling: group.serviceCharges + group.baseFees,
+      other: group.overtime,
+      civil_aviation: 0, airport_charges: 0, catering: 0,
+      subtotal: group.total, vat: 0, total: group.total,
+      currency: "USD" as InvoiceCurrency, status: "Draft" as InvoiceStatus,
+      invoice_type: "Preliminary" as InvoiceType,
+      description: `${group.flights} flights — ${group.station} — ${billingMonth}`,
+      flight_ref: group.items.map((d: any) => d.flight_no).join(", "),
+      notes: `Auto-generated from ${group.flights} completed dispatch records`,
+    };
+    await add(inv as any);
+    toast({ title: "✅ Invoice Created", description: `Draft invoice for ${group.airline} at ${group.station}` });
+  };
 
   if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
@@ -340,6 +381,7 @@ export default function InvoicesPage() {
           <p className="text-muted-foreground text-xs md:text-sm mt-1">IATA SIS-compliant airline invoicing</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setShowBillingPreview(true)} className="toolbar-btn-outline"><Zap size={14} /> Generate from Dispatches</button>
           <button onClick={() => { setNewInvoice(emptyInvoice()); setShowAdd(true); }} className="toolbar-btn-primary"><Plus size={14} /> New Invoice</button>
         </div>
       </div>
