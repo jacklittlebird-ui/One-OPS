@@ -45,8 +45,9 @@ const channelNavs: Record<Channel, NavSection[]> = {
   station: [
     { label: "Dashboard", icon: <LayoutDashboard size={18} />, path: "/" },
     {
-      label: "SCHEDULE", icon: <Plane size={18} />, collapsible: true,
+      label: "DISPATCH", icon: <Building2 size={18} />, collapsible: true,
       children: [
+        { label: "Station Dispatch", path: "/station-dispatch" },
         { label: "Flight Schedules", path: "/clearances" },
       ],
     },
@@ -54,6 +55,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
       label: "REPORTING", icon: <FileBarChart2 size={18} />, collapsible: true,
       children: [
         { label: "Service Report", path: "/service-report" },
+        { label: "Irregularity Reports", path: "/irregularity-reports" },
         { label: "Lost & Found", path: "/lost-found" },
         { label: "Delay Codes", path: "/delay-codes" },
       ],
@@ -108,6 +110,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
       children: [
         { label: "Service Report", path: "/service-report" },
         { label: "Flight Schedules", path: "/clearances" },
+        { label: "Station Dispatch", path: "/station-dispatch" },
       ],
     },
     {
@@ -123,6 +126,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
     {
       label: "QUALITY & SAFETY", icon: <AlertTriangle size={18} />, collapsible: true,
       children: [
+        { label: "Irregularity Reports", path: "/irregularity-reports" },
         { label: "Bulletins", path: "/bulletins" },
         { label: "Manuals & Forms", path: "/manuals-forms" },
       ],
@@ -190,6 +194,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
     {
       label: "OPERATION", icon: <Plane size={18} />, collapsible: true,
       children: [
+        { label: "Station Dispatch", path: "/station-dispatch" },
         { label: "Countries", path: "/countries" },
         { label: "Airports", path: "/airports" },
         { label: "Airlines", path: "/airlines" },
@@ -235,6 +240,7 @@ const channelNavs: Record<Channel, NavSection[]> = {
     {
       label: "QUALITY & SAFETY", icon: <AlertTriangle size={18} />, collapsible: true,
       children: [
+        { label: "Irregularity Reports", path: "/irregularity-reports" },
         { label: "Bulletins", path: "/bulletins" },
         { label: "Manuals & Forms", path: "/manuals-forms" },
       ],
