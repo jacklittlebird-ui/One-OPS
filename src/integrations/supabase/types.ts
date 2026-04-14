@@ -640,12 +640,54 @@ export type Database = {
           },
         ]
       }
+      contract_service_rates: {
+        Row: {
+          contract_id: string
+          created_at: string
+          duration_hours: number
+          id: string
+          rate: number
+          service_type: string
+          sort_order: number
+          staff_count: number
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          rate?: number
+          service_type?: string
+          sort_order?: number
+          staff_count?: number
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          rate?: number
+          service_type?: string
+          sort_order?: number
+          staff_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_service_rates_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           airline: string
           airline_iata: string | null
           annual_value: number
           auto_renew: boolean
+          base_flat_fee: number
           billing_frequency: string
           contact_email: string
           contact_person: string
@@ -653,10 +695,13 @@ export type Database = {
           contract_type: string
           created_at: string
           currency: Database["public"]["Enums"]["currency_type"]
+          default_team_size: string
           end_date: string
           id: string
           notes: string | null
+          overtime_rate: number
           payment_terms: string
+          service_scope: string
           services: string | null
           sgha_ref: string
           start_date: string
@@ -669,6 +714,7 @@ export type Database = {
           airline_iata?: string | null
           annual_value?: number
           auto_renew?: boolean
+          base_flat_fee?: number
           billing_frequency?: string
           contact_email?: string
           contact_person?: string
@@ -676,10 +722,13 @@ export type Database = {
           contract_type?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_type"]
+          default_team_size?: string
           end_date: string
           id?: string
           notes?: string | null
+          overtime_rate?: number
           payment_terms?: string
+          service_scope?: string
           services?: string | null
           sgha_ref?: string
           start_date: string
@@ -692,6 +741,7 @@ export type Database = {
           airline_iata?: string | null
           annual_value?: number
           auto_renew?: boolean
+          base_flat_fee?: number
           billing_frequency?: string
           contact_email?: string
           contact_person?: string
@@ -699,10 +749,13 @@ export type Database = {
           contract_type?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_type"]
+          default_team_size?: string
           end_date?: string
           id?: string
           notes?: string | null
+          overtime_rate?: number
           payment_terms?: string
+          service_scope?: string
           services?: string | null
           sgha_ref?: string
           start_date?: string
@@ -1045,6 +1098,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      irregularity_reports: {
+        Row: {
+          airline: string
+          assigned_to: string
+          category: string
+          created_at: string
+          description: string
+          flight_no: string
+          id: string
+          incident_date: string
+          report_id: string
+          reported_by: string
+          resolution: string
+          resolved_at: string | null
+          severity: string
+          station: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          airline?: string
+          assigned_to?: string
+          category?: string
+          created_at?: string
+          description?: string
+          flight_no?: string
+          id?: string
+          incident_date?: string
+          report_id?: string
+          reported_by?: string
+          resolution?: string
+          resolved_at?: string | null
+          severity?: string
+          station?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          airline?: string
+          assigned_to?: string
+          category?: string
+          created_at?: string
+          description?: string
+          flight_no?: string
+          id?: string
+          incident_date?: string
+          report_id?: string
+          reported_by?: string
+          resolution?: string
+          resolved_at?: string | null
+          severity?: string
+          station?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       journal_entries: {
         Row: {
