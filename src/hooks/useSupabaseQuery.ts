@@ -5,14 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 
 type TableName = 
   | "flight_schedules" | "service_reports" | "service_report_delays"
-  | "invoices" | "contracts" | "lost_found" | "staff_roster" | "overfly_schedules"
+  | "invoices" | "contracts" | "contract_service_rates" | "lost_found" | "staff_roster" | "overfly_schedules"
   | "airlines" | "aircrafts" | "delay_codes" | "abbreviations" | "aircraft_types_ref"
   | "traffic_rights" | "bulletins" | "manuals_forms" | "catering_items" | "tube_charges"
   | "airport_tax" | "basic_ramp" | "vendor_equipment" | "hall_vvip"
   | "countries" | "airports" | "services_catalog" | "service_providers"
   | "airline_airport_services"
   | "chart_of_accounts" | "journal_entries" | "journal_entry_lines"
-  | "vendor_invoices" | "airline_incentives" | "airport_charges" | "audit_logs";
+  | "vendor_invoices" | "airline_incentives" | "airport_charges" | "audit_logs"
+  | "irregularity_reports";
 
 export function useSupabaseTable<T extends Record<string, any>>(
   table: TableName,
