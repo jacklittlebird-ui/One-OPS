@@ -590,6 +590,67 @@ export default function InvoicesPage() {
           onPrint={(inv) => setPrintInvoice(toPrintFormat(inv as any))}
         />
       )}
+
+      {/* Billing Preview Modal */}
+      {showBillingPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm">
+          <div className="bg-card rounded-xl border shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto m-4">
+            <div className="sticky top-0 bg-card border-b px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
+              <h2 className="font-bold text-foreground text-lg flex items-center gap-2"><Zap size={18} className="text-primary" /> Generate Invoices from Dispatches</h2>
+              <button onClick={() => setShowBillingPreview(false)} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Billing Month</label>
+                  <input type="month" className={inputCls + " w-40"} value={billingMonth} onChange={e => setBillingMonth(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Station</label>
+                  <select className={selectCls + " w-32"} value={billingStation} onChange={e => setBillingStation(e.target.value)}>
+                    <option>All</option>
+                    <option>CAI</option><option>HRG</option><option>SSH</option>
+                  </select>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Showing completed dispatches grouped by airline & station for <span className="font-semibold text-foreground">{billingMonth}</span>
+              </p>
+
+              {billingPreviewData.length === 0 ? (
+                <div className="bg-muted/50 rounded-lg p-8 text-center text-muted-foreground">
+                  <FileText size={32} className="mx-auto mb-2 opacity-40" />
+                  <p className="font-semibold">No completed dispatches found</p>
+                  <p className="text-xs mt-1">Complete dispatch assignments to generate invoices</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {billingPreviewData.map((g, i) => (
+                    <div key={i} className="bg-muted/30 border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="font-semibold text-foreground">{g.airline}</div>
+                          <div className="text-xs text-muted-foreground">{g.station} — {g.flights} flights</div>
+                        </div>
+                        <button onClick={() => generateInvoiceFromBilling(g)} className="toolbar-btn-primary text-xs py-1.5">
+                          <Plus size={12} /> Create Draft Invoice
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3 text-sm">
+                        <div><span className="text-xs text-muted-foreground block">Base Fees</span><span className="font-semibold">${g.baseFees.toLocaleString()}</span></div>
+                        <div><span className="text-xs text-muted-foreground block">Service Charges</span><span className="font-semibold">${g.serviceCharges.toLocaleString()}</span></div>
+                        <div><span className="text-xs text-muted-foreground block">Overtime</span><span className="font-semibold text-warning">${g.overtime.toLocaleString()}</span></div>
+                        <div><span className="text-xs text-muted-foreground block">Total</span><span className="font-bold text-success">${g.total.toLocaleString()}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
