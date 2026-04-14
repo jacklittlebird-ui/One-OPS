@@ -849,10 +849,15 @@ export type Database = {
           flight_no: string
           flight_schedule_id: string | null
           id: string
+          irregularity_id: string | null
           notes: string
           overtime_charge: number
           overtime_hours: number
           overtime_rate: number
+          review_comment: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string
           scheduled_end: string
           scheduled_start: string
           service_rate: number
@@ -878,10 +883,15 @@ export type Database = {
           flight_no?: string
           flight_schedule_id?: string | null
           id?: string
+          irregularity_id?: string | null
           notes?: string
           overtime_charge?: number
           overtime_hours?: number
           overtime_rate?: number
+          review_comment?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string
           scheduled_end?: string
           scheduled_start?: string
           service_rate?: number
@@ -907,10 +917,15 @@ export type Database = {
           flight_no?: string
           flight_schedule_id?: string | null
           id?: string
+          irregularity_id?: string | null
           notes?: string
           overtime_charge?: number
           overtime_hours?: number
           overtime_rate?: number
+          review_comment?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string
           scheduled_end?: string
           scheduled_start?: string
           service_rate?: number
@@ -935,6 +950,13 @@ export type Database = {
             columns: ["flight_schedule_id"]
             isOneToOne: false
             referencedRelation: "flight_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_assignments_irregularity_id_fkey"
+            columns: ["irregularity_id"]
+            isOneToOne: false
+            referencedRelation: "irregularity_reports"
             referencedColumns: ["id"]
           },
         ]
