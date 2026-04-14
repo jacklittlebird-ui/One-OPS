@@ -13,7 +13,7 @@ type TableName =
   | "airline_airport_services"
   | "chart_of_accounts" | "journal_entries" | "journal_entry_lines"
   | "vendor_invoices" | "airline_incentives" | "airport_charges" | "audit_logs"
-  | "irregularity_reports";
+  | "irregularity_reports" | "dispatch_assignments";
 
 export function useSupabaseTable<T extends Record<string, any>>(
   table: TableName,
