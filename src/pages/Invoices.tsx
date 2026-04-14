@@ -134,6 +134,8 @@ const PAGE_SIZE = 15;
 export default function InvoicesPage() {
   const queryClient = useQueryClient();
   const { data: invoices, isLoading, add, update, remove, bulkInsert } = useSupabaseTable<InvoiceRow>("invoices");
+  const { data: dispatches } = useSupabaseTable<any>("dispatch_assignments");
+  const { data: contracts } = useSupabaseTable<any>("contracts");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -149,6 +151,9 @@ export default function InvoicesPage() {
   const [printInvoice, setPrintInvoice] = useState<any>(null);
   const [detailInvoice, setDetailInvoice] = useState<InvoiceRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBillingPreview, setShowBillingPreview] = useState(false);
+  const [billingMonth, setBillingMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [billingStation, setBillingStation] = useState("All");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
