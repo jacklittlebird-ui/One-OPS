@@ -3,7 +3,7 @@ import {
   Search, Plus, Download, Upload, FileText, DollarSign,
   Pencil, Trash2, X, ChevronLeft, ChevronRight, CheckCircle,
   Clock, XCircle, AlertCircle, Printer, ShieldCheck, Eye,
-  TrendingUp, Filter, Calendar, BarChart3
+  TrendingUp, Filter, Calendar, BarChart3, Zap
 } from "lucide-react";
 import { formatDateDMY } from "@/lib/utils";
 import { useLocation } from "react-router-dom";
@@ -134,6 +134,8 @@ const PAGE_SIZE = 15;
 export default function InvoicesPage() {
   const queryClient = useQueryClient();
   const { data: invoices, isLoading, add, update, remove, bulkInsert } = useSupabaseTable<InvoiceRow>("invoices");
+  const { data: dispatches } = useSupabaseTable<any>("dispatch_assignments");
+  const { data: contracts } = useSupabaseTable<any>("contracts");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -149,6 +151,9 @@ export default function InvoicesPage() {
   const [printInvoice, setPrintInvoice] = useState<any>(null);
   const [detailInvoice, setDetailInvoice] = useState<InvoiceRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBillingPreview, setShowBillingPreview] = useState(false);
+  const [billingMonth, setBillingMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [billingStation, setBillingStation] = useState("All");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -325,6 +330,49 @@ export default function InvoicesPage() {
 
   const clearFilters = () => { setStatusFilter("All"); setTypeFilter("All"); setCurrencyFilter("All"); setDateFrom(""); setDateTo(""); };
 
+  // Billing preview: group completed dispatches by airline+station for the month
+  const billingPreviewData = useMemo(() => {
+    const completed = dispatches.filter((d: any) => {
+      const matchMonth = d.flight_date?.startsWith(billingMonth);
+      const matchStation = billingStation === "All" || d.station === billingStation;
+      return d.status === "Completed" && matchMonth && matchStation;
+    });
+    const grouped: Record<string, { airline: string; station: string; flights: number; baseFees: number; serviceCharges: number; overtime: number; total: number; items: any[] }> = {};
+    completed.forEach((d: any) => {
+      const key = `${d.airline}__${d.station}`;
+      if (!grouped[key]) grouped[key] = { airline: d.airline, station: d.station, flights: 0, baseFees: 0, serviceCharges: 0, overtime: 0, total: 0, items: [] };
+      grouped[key].flights++;
+      grouped[key].baseFees += d.base_fee || 0;
+      grouped[key].serviceCharges += d.service_rate || 0;
+      grouped[key].overtime += d.overtime_charge || 0;
+      grouped[key].total += d.total_charge || 0;
+      grouped[key].items.push(d);
+    });
+    return Object.values(grouped);
+  }, [dispatches, billingMonth, billingStation]);
+
+  const generateInvoiceFromBilling = async (group: typeof billingPreviewData[0]) => {
+    const inv: Partial<InvoiceRow> = {
+      invoice_no: `LNK-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      date: new Date().toISOString().slice(0, 10),
+      due_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+      operator: group.airline,
+      station: group.station,
+      billing_period: billingMonth,
+      handling: group.serviceCharges + group.baseFees,
+      other: group.overtime,
+      civil_aviation: 0, airport_charges: 0, catering: 0,
+      subtotal: group.total, vat: 0, total: group.total,
+      currency: "USD" as InvoiceCurrency, status: "Draft" as InvoiceStatus,
+      invoice_type: "Preliminary" as InvoiceType,
+      description: `${group.flights} flights — ${group.station} — ${billingMonth}`,
+      flight_ref: group.items.map((d: any) => d.flight_no).join(", "),
+      notes: `Auto-generated from ${group.flights} completed dispatch records`,
+    };
+    await add(inv as any);
+    toast({ title: "✅ Invoice Created", description: `Draft invoice for ${group.airline} at ${group.station}` });
+  };
+
   if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
   return (
@@ -335,6 +383,7 @@ export default function InvoicesPage() {
           <p className="text-muted-foreground text-xs md:text-sm mt-1">IATA SIS-compliant airline invoicing</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setShowBillingPreview(true)} className="toolbar-btn-outline"><Zap size={14} /> Generate from Dispatches</button>
           <button onClick={() => { setNewInvoice(emptyInvoice()); setShowAdd(true); }} className="toolbar-btn-primary"><Plus size={14} /> New Invoice</button>
         </div>
       </div>
@@ -540,6 +589,67 @@ export default function InvoicesPage() {
           onFinalize={(inv) => handleFinalize(inv as any)}
           onPrint={(inv) => setPrintInvoice(toPrintFormat(inv as any))}
         />
+      )}
+
+      {/* Billing Preview Modal */}
+      {showBillingPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm">
+          <div className="bg-card rounded-xl border shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto m-4">
+            <div className="sticky top-0 bg-card border-b px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
+              <h2 className="font-bold text-foreground text-lg flex items-center gap-2"><Zap size={18} className="text-primary" /> Generate Invoices from Dispatches</h2>
+              <button onClick={() => setShowBillingPreview(false)} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Billing Month</label>
+                  <input type="month" className={inputCls + " w-40"} value={billingMonth} onChange={e => setBillingMonth(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Station</label>
+                  <select className={selectCls + " w-32"} value={billingStation} onChange={e => setBillingStation(e.target.value)}>
+                    <option>All</option>
+                    <option>CAI</option><option>HRG</option><option>SSH</option>
+                  </select>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Showing completed dispatches grouped by airline & station for <span className="font-semibold text-foreground">{billingMonth}</span>
+              </p>
+
+              {billingPreviewData.length === 0 ? (
+                <div className="bg-muted/50 rounded-lg p-8 text-center text-muted-foreground">
+                  <FileText size={32} className="mx-auto mb-2 opacity-40" />
+                  <p className="font-semibold">No completed dispatches found</p>
+                  <p className="text-xs mt-1">Complete dispatch assignments to generate invoices</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {billingPreviewData.map((g, i) => (
+                    <div key={i} className="bg-muted/30 border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="font-semibold text-foreground">{g.airline}</div>
+                          <div className="text-xs text-muted-foreground">{g.station} — {g.flights} flights</div>
+                        </div>
+                        <button onClick={() => generateInvoiceFromBilling(g)} className="toolbar-btn-primary text-xs py-1.5">
+                          <Plus size={12} /> Create Draft Invoice
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3 text-sm">
+                        <div><span className="text-xs text-muted-foreground block">Base Fees</span><span className="font-semibold">${g.baseFees.toLocaleString()}</span></div>
+                        <div><span className="text-xs text-muted-foreground block">Service Charges</span><span className="font-semibold">${g.serviceCharges.toLocaleString()}</span></div>
+                        <div><span className="text-xs text-muted-foreground block">Overtime</span><span className="font-semibold text-warning">${g.overtime.toLocaleString()}</span></div>
+                        <div><span className="text-xs text-muted-foreground block">Total</span><span className="font-bold text-success">${g.total.toLocaleString()}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
