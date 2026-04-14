@@ -328,6 +328,8 @@ export default function InvoicesPage() {
     status: inv.status, notes: inv.notes,
   });
 
+  const clearFilters = () => { setStatusFilter("All"); setTypeFilter("All"); setCurrencyFilter("All"); setDateFrom(""); setDateTo(""); };
+
   // Billing preview: group completed dispatches by airline+station for the month
   const billingPreviewData = useMemo(() => {
     const completed = dispatches.filter((d: any) => {
