@@ -117,6 +117,7 @@ export default function StationDispatchPage() {
   const [dateFrom, setDateFrom] = useState(monthStart);
   const [dateTo, setDateTo] = useState(monthEnd);
   const [search, setSearch] = useState("");
+  const [airlineFilter, setAirlineFilter] = useState("");
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -146,12 +147,13 @@ export default function StationDispatchPage() {
     let r = dispatches.filter(d => d.station === stationFilter);
     if (dateFrom) r = r.filter(d => d.flight_date >= dateFrom);
     if (dateTo) r = r.filter(d => d.flight_date <= dateTo);
+    if (airlineFilter) r = r.filter(d => d.airline.toLowerCase() === airlineFilter.toLowerCase());
     if (search) {
       const s = search.toLowerCase();
       r = r.filter(d => d.flight_no.toLowerCase().includes(s) || d.airline.toLowerCase().includes(s) || d.staff_names.toLowerCase().includes(s));
     }
     return r;
-  }, [dispatches, stationFilter, dateFrom, dateTo, search]);
+  }, [dispatches, stationFilter, dateFrom, dateTo, airlineFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -170,9 +172,14 @@ export default function StationDispatchPage() {
         if (dateTo && d > dateTo) return false;
         return true;
       };
-      return stationMatch && (inRange(arrDate) || inRange(depDate));
+      if (!(stationMatch && (inRange(arrDate) || inRange(depDate)))) return false;
+      if (airlineFilter && f.airline_id) {
+        const aName = airlineMap[f.airline_id]?.name || "";
+        if (aName.toLowerCase() !== airlineFilter.toLowerCase()) return false;
+      }
+      return true;
     });
-  }, [flights, stationFilter, dateFrom, dateTo]);
+  }, [flights, stationFilter, dateFrom, dateTo, airlineFilter, airlineMap]);
 
   const assignedFlightIds = useMemo(() => new Set(dispatches.filter(d => d.flight_schedule_id).map(d => d.flight_schedule_id)), [dispatches]);
 
@@ -316,6 +323,10 @@ export default function StationDispatchPage() {
           <label className="text-xs text-muted-foreground font-medium">To</label>
           <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} className={inputCls + " w-36"} />
         </div>
+        <select value={airlineFilter} onChange={e => { setAirlineFilter(e.target.value); setPage(1); }} className={selectCls + " w-44"}>
+          <option value="">All Airlines</option>
+          {airlines.map(a => <option key={a.id} value={a.name}>{a.iata_code ? `${a.iata_code} — ` : ""}{a.name}</option>)}
+        </select>
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input type="text" placeholder="Search…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
