@@ -144,7 +144,8 @@ export default function StationDispatchPage() {
 
   // Filtered dispatches
   const filtered = useMemo(() => {
-    let r = dispatches.filter(d => d.station === stationFilter);
+    let r = [...dispatches];
+    if (stationFilter) r = r.filter(d => d.station === stationFilter);
     if (dateFrom) r = r.filter(d => d.flight_date >= dateFrom);
     if (dateTo) r = r.filter(d => d.flight_date <= dateTo);
     if (airlineFilter) r = r.filter(d => d.airline.toLowerCase() === airlineFilter.toLowerCase());
