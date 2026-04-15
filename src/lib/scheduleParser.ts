@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import mammoth from "mammoth";
+import * as mammoth from "mammoth";
 
 export type ParsedFlight = {
   flight_no: string;
