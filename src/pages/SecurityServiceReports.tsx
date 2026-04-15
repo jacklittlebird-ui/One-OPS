@@ -357,149 +357,243 @@ export default function SecurityServiceReportsPage() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Main Tabs: Reports vs Scheduled Flights */}
       <div className="bg-card rounded-lg border overflow-hidden">
         <div className="p-4 border-b flex flex-wrap items-center gap-3">
-          <h2 className="text-base font-semibold text-foreground mr-auto">Service Report Log</h2>
+          <div className="flex items-center gap-2 mr-auto">
+            <button
+              onClick={() => { setActiveMainTab("reports"); setPage(1); }}
+              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition ${activeMainTab === "reports" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              <FileBarChart2 size={14} className="inline mr-1" /> Service Reports ({filtered.length})
+            </button>
+            <button
+              onClick={() => { setActiveMainTab("flights"); setFlightsPage(1); }}
+              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition ${activeMainTab === "flights" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              <CalendarDays size={14} className="inline mr-1" /> Scheduled Flights ({filteredFlights.length})
+            </button>
+          </div>
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text" placeholder="Search airline, flight, staff…"
-              value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+              value={search} onChange={e => { setSearch(e.target.value); setPage(1); setFlightsPage(1); }}
               className="pl-8 pr-3 py-1.5 text-sm border rounded bg-card text-foreground placeholder:text-muted-foreground w-56 focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <select value={stationFilter} onChange={e => { setStationFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-            <option>All Stations</option>
-            {allStations.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <select value={serviceFilter} onChange={e => { setServiceFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-            <option>All Types</option>
-            {allServiceTypes.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <select value={reviewFilter} onChange={e => { setReviewFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-            <option>All</option>
-            {REVIEW_STATUSES.map(s => <option key={s}>{s}</option>)}
-            <option>Rejected</option>
-          </select>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="From" />
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="To" />
+          {activeMainTab === "reports" && (
+            <>
+              <select value={stationFilter} onChange={e => { setStationFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
+                <option>All Stations</option>
+                {allStations.map(s => <option key={s}>{s}</option>)}
+              </select>
+              <select value={serviceFilter} onChange={e => { setServiceFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
+                <option>All Types</option>
+                {allServiceTypes.map(s => <option key={s}>{s}</option>)}
+              </select>
+              <select value={reviewFilter} onChange={e => { setReviewFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
+                <option>All</option>
+                {REVIEW_STATUSES.map(s => <option key={s}>{s}</option>)}
+                <option>Rejected</option>
+              </select>
+            </>
+          )}
+          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); setFlightsPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="From" />
+          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); setFlightsPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="To" />
           <button onClick={handleExport} className="toolbar-btn-outline"><Download size={14} /> Export</button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {["#", "STATION", "AIRLINE", "FLIGHT", "DATE", "TYPE", "STAFF", "ACTUAL TIME", "DURATION", "OT (h)", "CHARGE ($)", "STATUS", "PIPELINE", "ACTIONS"].map(h => (
-                  <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr><td colSpan={14} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
-              ) : pageData.length === 0 ? (
-                <tr>
-                  <td colSpan={14} className="text-center py-16">
-                    <Shield size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-                    <p className="font-semibold text-foreground">No Service Reports</p>
-                    <p className="text-muted-foreground text-sm mt-1">Dispatched flights will appear here as service reports</p>
-                  </td>
-                </tr>
-              ) : pageData.map((r, i) => {
-                const rc = reviewStatusConfig[r.review_status] || reviewStatusConfig["Draft"];
-                const sc = dispatchStatusConfig[r.status] || dispatchStatusConfig["Pending"];
-                const hasIrregularity = r.irregularity_id && linkedIrregularities.has(r.irregularity_id);
-                return (
-                  <tr key={r.id} className="data-table-row">
-                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{(page - 1) * PAGE_SIZE + i + 1}</td>
-                    <td className="px-3 py-2.5 font-semibold text-foreground">{r.station}</td>
-                    <td className="px-3 py-2.5 text-foreground">{r.airline}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-foreground">{r.flight_no}</td>
-                    <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.flight_date}</td>
-                    <td className="px-3 py-2.5">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{r.service_type}</span>
-                    </td>
-                    <td className="px-3 py-2.5 text-foreground">{r.staff_count}</td>
-                    <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
-                      {r.actual_start && r.actual_end ? `${r.actual_start}–${r.actual_end}` : "—"}
-                    </td>
-                    <td className="px-3 py-2.5 text-foreground">{r.actual_duration_hours ? `${r.actual_duration_hours}h` : "—"}</td>
-                    <td className="px-3 py-2.5">
-                      {r.overtime_hours > 0 ? (
-                        <span className="text-warning font-semibold">{r.overtime_hours}h</span>
-                      ) : "—"}
-                    </td>
-                    <td className="px-3 py-2.5 font-semibold text-success">{r.total_charge > 0 ? `$${r.total_charge.toLocaleString()}` : "—"}</td>
-                    <td className="px-3 py-2.5">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${sc}`}>{r.status}</span>
-                      {hasIrregularity && (
-                        <span title="Has irregularity"><AlertTriangle size={12} className="inline ml-1 text-destructive" /></span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <PipelineStepper
-                        currentStage={derivePipelineStage({
-                          isLinked: r.status === "Completed",
-                          reviewStatus: r.review_status === "Approved" ? "approved" : r.review_status === "Ready for Billing" ? "ready_for_billing" : r.review_status === "Rejected" ? "rejected" : "pending",
-                        })}
-                        compact
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setEditRow({ ...r })} className="p-1 rounded hover:bg-muted" title="Edit Report">
-                          <Pencil size={14} className="text-muted-foreground" />
-                        </button>
-                        {r.review_status === "Draft" && r.status === "Completed" && (
-                          <button onClick={() => submitForReview(r)} className="p-1 rounded hover:bg-muted" title="Submit for Review">
-                            <ExternalLink size={14} className="text-primary" />
-                          </button>
-                        )}
-                        {r.review_status === "Pending Review" && (
-                          <button onClick={() => { setReviewRow(r); setReviewComment(r.review_comment); }} className="p-1 rounded hover:bg-muted" title="Review">
-                            <MessageSquare size={14} className="text-warning" />
-                          </button>
-                        )}
-                        {r.review_status === "Approved" && (
-                          <button onClick={() => markReadyForBilling(r)} className="p-1 rounded hover:bg-muted" title="Mark Ready for Billing">
-                            <DollarSign size={14} className="text-success" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+        {activeMainTab === "reports" ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    {["#", "STATION", "AIRLINE", "FLIGHT", "DATE", "TYPE", "STAFF", "ACTUAL TIME", "DURATION", "OT (h)", "CHARGE ($)", "STATUS", "PIPELINE", "ACTIONS"].map(h => (
+                      <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <span className="text-xs text-muted-foreground">
-              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
-            </span>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1 rounded hover:bg-muted disabled:opacity-30">
-                <ChevronLeft size={16} />
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const p = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
-                if (p > totalPages) return null;
-                return (
-                  <button key={p} onClick={() => setPage(p)} className={`w-7 h-7 rounded text-xs font-semibold ${p === page ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"}`}>
-                    {p}
-                  </button>
-                );
-              })}
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1 rounded hover:bg-muted disabled:opacity-30">
-                <ChevronRight size={16} />
-              </button>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr><td colSpan={14} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
+                  ) : pageData.length === 0 ? (
+                    <tr>
+                      <td colSpan={14} className="text-center py-16">
+                        <Shield size={40} className="mx-auto text-muted-foreground/30 mb-3" />
+                        <p className="font-semibold text-foreground">No Service Reports</p>
+                        <p className="text-muted-foreground text-sm mt-1">Dispatched flights will appear here as service reports</p>
+                      </td>
+                    </tr>
+                  ) : pageData.map((r, i) => {
+                    const rc = reviewStatusConfig[r.review_status] || reviewStatusConfig["Draft"];
+                    const sc = dispatchStatusConfig[r.status] || dispatchStatusConfig["Pending"];
+                    const hasIrregularity = r.irregularity_id && linkedIrregularities.has(r.irregularity_id);
+                    return (
+                      <tr key={r.id} className="data-table-row">
+                        <td className="px-3 py-2.5 text-muted-foreground text-xs">{(page - 1) * PAGE_SIZE + i + 1}</td>
+                        <td className="px-3 py-2.5 font-semibold text-foreground">{r.station}</td>
+                        <td className="px-3 py-2.5 text-foreground">{r.airline}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-foreground">{r.flight_no}</td>
+                        <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.flight_date}</td>
+                        <td className="px-3 py-2.5">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{r.service_type}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-foreground">{r.staff_count}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
+                          {r.actual_start && r.actual_end ? `${r.actual_start}–${r.actual_end}` : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-foreground">{r.actual_duration_hours ? `${r.actual_duration_hours}h` : "—"}</td>
+                        <td className="px-3 py-2.5">
+                          {r.overtime_hours > 0 ? (
+                            <span className="text-warning font-semibold">{r.overtime_hours}h</span>
+                          ) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 font-semibold text-success">{r.total_charge > 0 ? `$${r.total_charge.toLocaleString()}` : "—"}</td>
+                        <td className="px-3 py-2.5">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${sc}`}>{r.status}</span>
+                          {hasIrregularity && (
+                            <span title="Has irregularity"><AlertTriangle size={12} className="inline ml-1 text-destructive" /></span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <PipelineStepper
+                            currentStage={derivePipelineStage({
+                              isLinked: r.status === "Completed",
+                              reviewStatus: r.review_status === "Approved" ? "approved" : r.review_status === "Ready for Billing" ? "ready_for_billing" : r.review_status === "Rejected" ? "rejected" : "pending",
+                            })}
+                            compact
+                          />
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setEditRow({ ...r })} className="p-1 rounded hover:bg-muted" title="Edit Report">
+                              <Pencil size={14} className="text-muted-foreground" />
+                            </button>
+                            {r.review_status === "Draft" && r.status === "Completed" && (
+                              <button onClick={() => submitForReview(r)} className="p-1 rounded hover:bg-muted" title="Submit for Review">
+                                <ExternalLink size={14} className="text-primary" />
+                              </button>
+                            )}
+                            {r.review_status === "Pending Review" && (
+                              <button onClick={() => { setReviewRow(r); setReviewComment(r.review_comment); }} className="p-1 rounded hover:bg-muted" title="Review">
+                                <MessageSquare size={14} className="text-warning" />
+                              </button>
+                            )}
+                            {r.review_status === "Approved" && (
+                              <button onClick={() => markReadyForBilling(r)} className="p-1 rounded hover:bg-muted" title="Mark Ready for Billing">
+                                <DollarSign size={14} className="text-success" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <span className="text-xs text-muted-foreground">
+                  Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1 rounded hover:bg-muted disabled:opacity-30">
+                    <ChevronLeft size={16} />
+                  </button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const p = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
+                    if (p > totalPages) return null;
+                    return (
+                      <button key={p} onClick={() => setPage(p)} className={`w-7 h-7 rounded text-xs font-semibold ${p === page ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"}`}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-1 rounded hover:bg-muted disabled:opacity-30">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    {["#", "AIRLINE", "FLIGHT NO", "ROUTE", "A/C TYPE", "REG", "SERVICE TYPE", "ARR DATE", "STA", "DEP DATE", "STD", "STATUS"].map(h => (
+                      <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredFlights.length === 0 ? (
+                    <tr>
+                      <td colSpan={12} className="text-center py-16">
+                        <CalendarDays size={40} className="mx-auto text-muted-foreground/30 mb-3" />
+                        <p className="font-semibold text-foreground">No Security Flights</p>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          Flights with security clearance types (Arrival Security, Departure Security, Maintenance Security, Turnaround Security) will appear here
+                        </p>
+                      </td>
+                    </tr>
+                  ) : flightsPageData.map((f: any, i: number) => {
+                    const statusCls = f.status === "Approved" ? "bg-success/15 text-success" : f.status === "Rejected" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning";
+                    return (
+                      <tr key={f.id} className="data-table-row">
+                        <td className="px-3 py-2.5 text-muted-foreground text-xs">{(flightsPage - 1) * PAGE_SIZE + i + 1}</td>
+                        <td className="px-3 py-2.5 text-foreground font-semibold">
+                          {f.airlines?.iata_code ? `${f.airlines.iata_code} — ` : ""}{f.airlines?.name || "—"}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-foreground">{f.flight_no}</td>
+                        <td className="px-3 py-2.5 text-foreground">{f.route}</td>
+                        <td className="px-3 py-2.5 text-foreground">{f.aircraft_type}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-foreground">{f.registration}</td>
+                        <td className="px-3 py-2.5">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{f.clearance_type}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{f.arrival_date || "—"}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{f.sta || "—"}</td>
+                        <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{f.departure_date || "—"}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{f.std || "—"}</td>
+                        <td className="px-3 py-2.5">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusCls}`}>{f.status}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {flightsTotalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <span className="text-xs text-muted-foreground">
+                  Showing {(flightsPage - 1) * PAGE_SIZE + 1}–{Math.min(flightsPage * PAGE_SIZE, filteredFlights.length)} of {filteredFlights.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setFlightsPage(p => Math.max(1, p - 1))} disabled={flightsPage === 1} className="p-1 rounded hover:bg-muted disabled:opacity-30">
+                    <ChevronLeft size={16} />
+                  </button>
+                  {Array.from({ length: Math.min(5, flightsTotalPages) }, (_, i) => {
+                    const p = Math.max(1, Math.min(flightsPage - 2, flightsTotalPages - 4)) + i;
+                    if (p > flightsTotalPages) return null;
+                    return (
+                      <button key={p} onClick={() => setFlightsPage(p)} className={`w-7 h-7 rounded text-xs font-semibold ${p === flightsPage ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"}`}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                  <button onClick={() => setFlightsPage(p => Math.min(flightsTotalPages, p + 1))} disabled={flightsPage === flightsTotalPages} className="p-1 rounded hover:bg-muted disabled:opacity-30">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
