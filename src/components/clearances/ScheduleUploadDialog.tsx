@@ -156,7 +156,7 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
             <div className="text-center">
               <p className="font-semibold text-foreground">Upload Schedule File</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Supports Excel (.xlsx), CSV formats
+                Supports Excel (.xlsx), Word (.docx), PDF, CSV, and text files
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Auto-detects clearance format (Flight No, Route, STA/STD) and traffic report format (FltId, DepStn, ArrStn)
