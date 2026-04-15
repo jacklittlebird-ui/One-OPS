@@ -200,7 +200,25 @@ export default function SecurityServiceReportsPage() {
     return map;
   }, [irregularities]);
 
-  // Edit dialog save
+  // Filter security flights
+  const filteredFlights = useMemo(() => {
+    let rows = securityFlights;
+    if (search) {
+      const s = search.toLowerCase();
+      rows = rows.filter((r: any) =>
+        r.flight_no?.toLowerCase().includes(s) ||
+        r.route?.toLowerCase().includes(s) ||
+        (r.airlines?.name || "").toLowerCase().includes(s)
+      );
+    }
+    if (dateFrom) rows = rows.filter((r: any) => (r.arrival_date || r.departure_date || "") >= dateFrom);
+    if (dateTo) rows = rows.filter((r: any) => (r.arrival_date || r.departure_date || "") <= dateTo);
+    return rows;
+  }, [securityFlights, search, dateFrom, dateTo]);
+
+  const flightsTotalPages = Math.max(1, Math.ceil(filteredFlights.length / PAGE_SIZE));
+  const flightsPageData = filteredFlights.slice((flightsPage - 1) * PAGE_SIZE, flightsPage * PAGE_SIZE);
+
   const saveEdit = () => {
     if (!editRow) return;
     const actualHrs = timeDiffHours(editRow.actual_start, editRow.actual_end);
