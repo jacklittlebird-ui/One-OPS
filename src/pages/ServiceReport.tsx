@@ -236,7 +236,7 @@ function resolveStationFromRoute(route: string) {
   return "";
 }
 
-export default function ServiceReportPage() {
+function HandlingServiceReportContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
