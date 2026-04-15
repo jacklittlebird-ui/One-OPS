@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, X, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +27,9 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
   const [unmatchedCount, setUnmatchedCount] = useState(0);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
+  const [selectedAirline, setSelectedAirline] = useState("");
+  const [selectedStation, setSelectedStation] = useState("");
+  const [dragging, setDragging] = useState(false);
 
   const { data: airports } = useQuery({
     queryKey: ["airports-iata-upload"],
@@ -43,13 +47,22 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
     },
   });
 
-  const stationCodes = (airports || []).map((a: any) => a.iata_code.toUpperCase()).filter(Boolean);
+  const stationCodes = useMemo(
+    () => (airports || []).map((a: any) => a.iata_code?.toUpperCase()).filter(Boolean),
+    [airports]
+  );
 
-  const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = useCallback(async (file: File) => {
+    if (!selectedAirline) {
+      toast({ title: "Airline required", description: "Please select an airline before uploading.", variant: "destructive" });
+      return;
+    }
+    if (!selectedStation) {
+      toast({ title: "Station required", description: "Please select a station before uploading.", variant: "destructive" });
+      return;
+    }
+
     setFileName(file.name);
-
     try {
       const rows = await readFileAsRows(file);
       if (rows.length === 0) {
@@ -57,15 +70,37 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
         return;
       }
       const result = parseScheduleData(rows, stationCodes);
-      setFlights(result.flights);
+      // Apply selected airline to all parsed flights
+      const airlineObj = (airlines || []).find((a: any) => a.id === selectedAirline);
+      const airlineName = airlineObj?.name || "";
+      const enriched = result.flights.map(f => ({
+        ...f,
+        airline_name: f.airline_name || airlineName,
+        matched_station: f.matched_station || selectedStation,
+        station_role: f.station_role || ("turnaround" as const),
+      }));
+      setFlights(enriched);
       setFormat(result.format);
-      setUnmatchedCount(result.unmatchedCount);
+      setUnmatchedCount(enriched.filter(f => !f.matched_station).length);
       setStep("preview");
     } catch (err: any) {
       toast({ title: "Parse Error", description: err.message, variant: "destructive" });
     }
+  }, [stationCodes, selectedAirline, selectedStation, airlines]);
+
+  const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
     e.target.value = "";
-  }, [stationCodes]);
+  }, [processFile]);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
+  }, [processFile]);
 
   const updateFlight = (idx: number, key: keyof ParsedFlight, value: any) => {
     setFlights(prev => prev.map((f, i) => i === idx ? { ...f, [key]: value } : f));
@@ -73,17 +108,6 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
 
   const removeFlight = (idx: number) => {
     setFlights(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const findAirlineId = (name: string): string | null => {
-    if (!name || !airlines) return null;
-    const lower = name.toLowerCase();
-    const match = airlines.find((a: any) =>
-      a.name.toLowerCase() === lower ||
-      a.code?.toLowerCase() === lower ||
-      a.iata_code?.toLowerCase() === lower
-    );
-    return match?.id || null;
   };
 
   const handleImport = async () => {
@@ -94,7 +118,7 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
     try {
       const records = flights.map(f => ({
         flight_no: f.flight_no,
-        airline_id: findAirlineId(f.airline_name) || null,
+        airline_id: selectedAirline || null,
         route: f.route,
         aircraft_type: f.aircraft_type,
         registration: f.registration,
@@ -110,7 +134,7 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
         permit_no: f.permit_no,
         handling_agent: f.handling_agent,
         config: f.config,
-        authority: f.matched_station,
+        authority: f.matched_station || selectedStation,
         status: "Pending" as const,
         purpose: "Scheduled",
       }));
@@ -135,8 +159,17 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
     setFormat("");
     setUnmatchedCount(0);
     setFileName("");
+    setSelectedAirline("");
+    setSelectedStation("");
     onOpenChange(false);
   };
+
+  const formatBadges = [
+    { label: "Excel (.xlsx)", ext: ".xlsx" },
+    { label: "Word (.docx)", ext: ".docx" },
+    { label: "PDF (.pdf)", ext: ".pdf" },
+    { label: "CSV (.csv)", ext: ".csv" },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
@@ -144,28 +177,82 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet size={18} className="text-primary" />
-            Import Flight Schedule
+            Import Schedule
           </DialogTitle>
         </DialogHeader>
 
         {step === "upload" && (
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <Upload size={32} className="text-primary" />
+          <div className="flex flex-col gap-5">
+            {/* Airline & Station selectors */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  Airline <span className="text-destructive">*</span>
+                </Label>
+                <Select value={selectedAirline} onValueChange={setSelectedAirline}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select airline" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(airlines || []).map((a: any) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.iata_code ? `${a.iata_code} — ` : ""}{a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  Station <span className="text-destructive">*</span>
+                </Label>
+                <Select value={selectedStation} onValueChange={setSelectedStation}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select station" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(airports || []).map((a: any) => (
+                      <SelectItem key={a.id} value={a.iata_code?.toUpperCase() || a.id}>
+                        {a.iata_code} — {a.name}{a.city ? `, ${a.city}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="font-semibold text-foreground">Upload Schedule File</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Supports Excel (.xlsx), Word (.docx), PDF, CSV, and text files
+
+            {/* Drop zone */}
+            <div
+              className={`border-2 border-dashed rounded-lg py-10 flex flex-col items-center gap-3 cursor-pointer transition-colors ${
+                dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+              }`}
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+            >
+              <Upload size={28} className="text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Drop a file or click to browse
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Auto-detects clearance format (Flight No, Route, STA/STD) and traffic report format (FltId, DepStn, ArrStn)
+              <div className="flex gap-2 flex-wrap justify-center">
+                {formatBadges.map(b => (
+                  <Badge key={b.ext} variant="outline" className="text-xs font-normal">
+                    {b.label}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center max-w-md mt-1">
+                Supports both clearance formats (Flight No, Route, STA, STD) and traffic report formats (FltId, DepStn, ArrStn, DatOp)
               </p>
             </div>
-            <Button onClick={() => fileRef.current?.click()}>
-              <Upload size={14} className="mr-2" /> Select File
-            </Button>
-            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.docx,.pdf,.txt,.tsv" className="hidden" onChange={handleFile} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,.docx,.pdf,.txt,.tsv"
+              className="hidden"
+              onChange={handleFile}
+            />
           </div>
         )}
 
