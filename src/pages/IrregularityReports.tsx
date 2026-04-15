@@ -26,13 +26,13 @@ type IrregularityRow = {
   created_at: string;
 };
 
-const SEVERITIES = ["Low", "Medium", "High", "Critical"];
+const SEVERITIES = ["Critical", "High", "Low", "Medium"];
 const CATEGORIES = [
-  "Unauthorized Access", "Equipment Malfunction", "Documentation Error",
-  "Safety Violation", "Baggage Incident", "Passenger Complaint",
-  "Security Breach", "Operational Delay", "Ground Damage", "Other"
+  "Baggage Incident", "Documentation Error", "Equipment Malfunction",
+  "Ground Damage", "Operational Delay", "Other", "Passenger Complaint",
+  "Safety Violation", "Security Breach", "Unauthorized Access"
 ];
-const IR_STATUSES = ["Open", "Under Investigation", "Resolved", "Closed"];
+const IR_STATUSES = ["Closed", "Open", "Resolved", "Under Investigation"];
 
 const severityColors: Record<string, string> = {
   Low: "bg-muted text-muted-foreground",

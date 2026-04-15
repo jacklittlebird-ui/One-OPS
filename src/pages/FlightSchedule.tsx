@@ -24,10 +24,10 @@ type FlightRow = {
   effective_to: string | null; frequency: string; codeshare: string; handling_agent: string;
 };
 
-const FLIGHT_TYPES = ["Passenger", "Cargo", "Charter", "Ferry", "Technical", "VIP", "Ambulance"] as const;
+const FLIGHT_TYPES = ["Ambulance", "Cargo", "Charter", "Ferry", "Passenger", "Technical", "VIP"] as const;
 const SEASONS = ["S", "W"] as const;
-const FREQUENCIES = ["Daily", "Weekly", "Bi-Weekly", "Seasonal", "Ad-Hoc"] as const;
-const STATUSES = ["Scheduled", "Delayed", "Cancelled", "Completed"] as const;
+const FREQUENCIES = ["Ad-Hoc", "Bi-Weekly", "Daily", "Seasonal", "Weekly"] as const;
+const STATUSES = ["Cancelled", "Completed", "Delayed", "Scheduled"] as const;
 
 const statusBadge = (s: string) => {
   if (s === "Scheduled") return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-info/15 text-info"><Clock size={12} />{s}</span>;

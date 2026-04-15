@@ -14,7 +14,7 @@ const priorityCfg: Record<string, string> = { High: "bg-destructive/15 text-dest
 
 type BulRow = { id: string; bulletin_id: string; title: string; type: string; issued_date: string; effective_date: string; expiry_date: string; issued_by: string; status: string; priority: string; description: string; recipients: string; acknowledged_by: string; category_code: string; };
 
-const TYPES = ["Safety", "Security", "Operations", "Quality", "Regulatory", "Emergency"];
+const TYPES = ["Emergency", "Operations", "Quality", "Regulatory", "Safety", "Security"];
 
 export default function BulletinsPage() {
   const { data, isLoading, add, update, remove } = useSupabaseTable<BulRow>("bulletins", { orderBy: "issued_date", ascending: false });

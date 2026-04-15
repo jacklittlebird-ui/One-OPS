@@ -27,8 +27,8 @@ type ProviderRow = {
 };
 
 const SERVICE_CATEGORIES = [
-  "Civil Aviation", "Ground Handling", "Catering", "Hotac",
-  "Fuel", "Security", "Special Services", "Transport", "VIP"
+  "Catering", "Civil Aviation", "Fuel", "Ground Handling",
+  "Hotac", "Security", "Special Services", "Transport", "VIP"
 ] as const;
 
 const categoryConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {

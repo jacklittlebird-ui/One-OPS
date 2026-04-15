@@ -20,8 +20,8 @@ type IncentiveRow = {
   start_date: string; end_date: string | null; description: string; status: string;
 };
 
-const TYPES = ["Volume", "Revenue", "Growth", "Loyalty", "Performance"];
-const PERIODS = ["Monthly", "Quarterly", "Semi-Annual", "Annual"];
+const TYPES = ["Growth", "Loyalty", "Performance", "Revenue", "Volume"];
+const PERIODS = ["Annual", "Monthly", "Quarterly", "Semi-Annual"];
 
 const TYPE_COLORS: Record<string, string> = {
   Volume: "bg-blue-100 text-blue-800",

@@ -27,7 +27,7 @@ const statusCfg: Record<LFStatus, { cls: string; icon: React.ReactNode }> = {
   Disposed:    { cls: "bg-muted text-muted-foreground",  icon: <X size={11} /> },
 };
 
-const CATEGORIES = ["Bag", "Electronics", "Documents", "Clothing", "Jewelry", "Medical", "Other"];
+const CATEGORIES = ["Bag", "Clothing", "Documents", "Electronics", "Jewelry", "Medical", "Other"];
 
 export default function LostFoundPage() {
   const { data: items, isLoading, add, update, remove } = useSupabaseTable<LFRow>("lost_found");

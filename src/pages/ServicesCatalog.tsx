@@ -14,7 +14,7 @@ import { exportToExcel } from "@/lib/exportExcel";
 
 type ServiceCatalogRow = { id: string; name: string; category: string; description: string; related_reports: string; related_documents: string; report_template: string; status: string; };
 
-const CATEGORIES = ["Civil Aviation", "Ground Handling", "Catering", "Hotac", "Fuel", "Security", "Special Services", "Transport", "VIP"];
+const CATEGORIES = ["Catering", "Civil Aviation", "Fuel", "Ground Handling", "Hotac", "Security", "Special Services", "Transport", "VIP"];
 
 const CATEGORY_ICONS: Record<string, string> = {
   "Civil Aviation": "✈️", "Ground Handling": "🛬", "Catering": "🍽️", "Hotac": "🏨",
