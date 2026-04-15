@@ -253,7 +253,7 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
               </Badge>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[50vh] border rounded-md">
+            <ScrollArea className="flex-1 border rounded-md">
               <Table>
                 <TableHeader>
                   <TableRow>
