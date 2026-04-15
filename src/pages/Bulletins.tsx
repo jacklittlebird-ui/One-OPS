@@ -14,7 +14,7 @@ const priorityCfg: Record<string, string> = { High: "bg-destructive/15 text-dest
 
 type BulRow = { id: string; bulletin_id: string; title: string; type: string; issued_date: string; effective_date: string; expiry_date: string; issued_by: string; status: string; priority: string; description: string; recipients: string; acknowledged_by: string; category_code: string; };
 
-const TYPES = ["Safety", "Security", "Operations", "Quality", "Regulatory", "Emergency"];
+const TYPES = ["Emergency", "Operations", "Quality", "Regulatory", "Safety", "Security"];
 
 export default function BulletinsPage() {
   const { data, isLoading, add, update, remove } = useSupabaseTable<BulRow>("bulletins", { orderBy: "issued_date", ascending: false });
@@ -91,7 +91,7 @@ export default function BulletinsPage() {
             <input type="text" placeholder="Search bulletins…" value={search} onChange={e => setSearch(e.target.value)} className="pl-8 pr-3 py-1.5 text-sm border rounded bg-card text-foreground placeholder:text-muted-foreground w-52 focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground"><option>All</option>{TYPES.map(t => <option key={t}>{t}</option>)}</select>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground"><option>All</option><option>Active</option><option>Expired</option><option>Draft</option><option>Superseded</option></select>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground"><option>All</option><option>Active</option><option>Draft</option><option>Expired</option><option>Superseded</option></select>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -168,11 +168,11 @@ export default function BulletinsPage() {
               </Select>
               <Select value={form.priority} onValueChange={v => setForm({ ...form, priority: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="High">High</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="Low">Low</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="High">High</SelectItem><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem></SelectContent>
               </Select>
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="Draft">Draft</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Expired">Expired</SelectItem><SelectItem value="Superseded">Superseded</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="Active">Active</SelectItem><SelectItem value="Draft">Draft</SelectItem><SelectItem value="Expired">Expired</SelectItem><SelectItem value="Superseded">Superseded</SelectItem></SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-3 gap-2">

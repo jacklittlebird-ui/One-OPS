@@ -22,11 +22,11 @@ export type ContractRow = {
   sgha_ref: string;
 };
 
-export const CONTRACT_TYPES = ["SGHA", "Bilateral", "Interline", "Charter", "Ad-Hoc"] as const;
+export const CONTRACT_TYPES = ["Ad-Hoc", "Bilateral", "Charter", "Interline", "SGHA"] as const;
 export const PAYMENT_TERMS = ["Net 15", "Net 30", "Net 45", "Net 60", "Net 90", "Prepaid"] as const;
-export const BILLING_FREQUENCIES = ["Per Flight", "Weekly", "Bi-Weekly", "Monthly", "Quarterly", "Annual"] as const;
-export const CURRENCIES = ["USD", "EUR", "EGP"] as const;
-export const STATUSES: ContractStatus[] = ["Active", "Pending", "Expired", "Terminated"];
+export const BILLING_FREQUENCIES = ["Annual", "Bi-Weekly", "Monthly", "Per Flight", "Quarterly", "Weekly"] as const;
+export const CURRENCIES = ["EGP", "EUR", "USD"] as const;
+export const STATUSES: ContractStatus[] = ["Active", "Expired", "Pending", "Terminated"];
 
 export function daysUntilExpiry(endDate: string): number {
   return Math.ceil((new Date(endDate).getTime() - Date.now()) / 86400000);

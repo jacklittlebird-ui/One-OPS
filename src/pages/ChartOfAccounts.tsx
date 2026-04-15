@@ -149,7 +149,7 @@ export default function ChartOfAccountsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <Select value={form.account_type} onValueChange={v => setForm({ ...form, account_type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{["Asset", "Liability", "Equity", "Revenue", "Expense"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    <SelectContent>{["Asset", "Equity", "Expense", "Liability", "Revenue"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                   </Select>
                   <Select value={form.parent_id || "none"} onValueChange={v => setForm({ ...form, parent_id: v === "none" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="Parent Account" /></SelectTrigger>
@@ -160,7 +160,7 @@ export default function ChartOfAccountsPage() {
                   <Input type="number" placeholder="Level" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value) || 1 })} min={1} />
                   <Select value={form.currency} onValueChange={v => setForm({ ...form, currency: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="EGP">EGP</SelectItem></SelectContent>
+                    <SelectContent><SelectItem value="EGP">EGP</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
                   </Select>
                   <Input type="number" placeholder="Opening Balance" value={form.opening_balance} onChange={e => setForm({ ...form, opening_balance: e.target.value })} />
                 </div>
@@ -193,7 +193,7 @@ export default function ChartOfAccountsPage() {
         <div className="relative flex-1"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} /><Input placeholder="Search accounts…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} /></div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Types</SelectItem>{["Asset", "Liability", "Equity", "Revenue", "Expense"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+          <SelectContent><SelectItem value="all">All Types</SelectItem>{["Asset", "Equity", "Expense", "Liability", "Revenue"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
         </Select>
       </div>
 

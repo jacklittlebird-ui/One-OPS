@@ -37,10 +37,10 @@ export type ClearanceRow = {
   notes: string;
 };
 
-export const CLEARANCE_TYPES = ["Full Handling", "Turnaround Security", "Arrival Security", "Departure Security", "Maintenance", "Transportation", "Hotel Accommodation", "Fuel Only", "Technical Stop", "Supervision Only", "Payment", "Touch & Go", "Catering Only", "Arrival Handling", "Departure Handling"];
-export const PURPOSES = ["Scheduled", "Charter", "Technical Stop", "Cargo", "VIP", "Diplomatic", "Medical Evacuation", "Ferry"];
-export const SKD_TYPES = ["Schedule", "Charter", "Cargo", "General Aviation", "Military", "State", "Meet and Assist", "VIP Lounge", "Transportation"];
-export const HANDLING_OPTIONS = ["Full Handling", "Ramp Only", "Transit", "Technical", "VIP Hall", "Ferry"];
+export const CLEARANCE_TYPES = ["Arrival Handling", "Arrival Security", "Catering Only", "Departure Handling", "Departure Security", "Fuel Only", "Full Handling", "Hotel Accommodation", "Maintenance", "Payment", "Supervision Only", "Technical Stop", "Touch & Go", "Transportation", "Turnaround Security"];
+export const PURPOSES = ["Cargo", "Charter", "Diplomatic", "Ferry", "Medical Evacuation", "Scheduled", "Technical Stop", "VIP"];
+export const SKD_TYPES = ["Cargo", "Charter", "General Aviation", "Meet and Assist", "Military", "Schedule", "State", "Transportation", "VIP Lounge"];
+export const HANDLING_OPTIONS = ["Ferry", "Full Handling", "Ramp Only", "Technical", "Transit", "VIP Hall"];
 
 export const STATUS_CONFIG: Record<string, { cls: string }> = {
   Pending:   { cls: "bg-warning/15 text-warning" },

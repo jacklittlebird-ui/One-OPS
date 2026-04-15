@@ -20,8 +20,8 @@ type IncentiveRow = {
   start_date: string; end_date: string | null; description: string; status: string;
 };
 
-const TYPES = ["Volume", "Revenue", "Growth", "Loyalty", "Performance"];
-const PERIODS = ["Monthly", "Quarterly", "Semi-Annual", "Annual"];
+const TYPES = ["Growth", "Loyalty", "Performance", "Revenue", "Volume"];
+const PERIODS = ["Annual", "Monthly", "Quarterly", "Semi-Annual"];
 
 const TYPE_COLORS: Record<string, string> = {
   Volume: "bg-blue-100 text-blue-800",
@@ -88,7 +88,7 @@ export default function AirlineIncentivesPage() {
             <div className="space-y-3">
               <Select value={form.airline_id} onValueChange={v => setForm({ ...form, airline_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Select Airline" /></SelectTrigger>
-                <SelectContent>{(airlines || []).map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.code})</SelectItem>)}</SelectContent>
+                <SelectContent>{(airlines || []).slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.code})</SelectItem>)}</SelectContent>
               </Select>
               <div className="grid grid-cols-2 gap-2">
                 <Select value={form.incentive_type} onValueChange={v => setForm({ ...form, incentive_type: v })}>

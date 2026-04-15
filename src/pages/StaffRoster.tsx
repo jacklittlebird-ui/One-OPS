@@ -102,7 +102,7 @@ export default function StaffRosterPage() {
             <input type="text" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="pl-8 pr-3 py-1.5 text-sm border rounded bg-card text-foreground placeholder:text-muted-foreground w-52 focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-            <option>All</option>{(["Supervisor","Agent","Dispatcher","Check-In","Ramp","Security","VIP","Admin"] as StaffRole[]).map(r => <option key={r}>{r}</option>)}
+            <option>All</option>{(["Admin","Agent","Check-In","Dispatcher","Ramp","Security","Supervisor","VIP"] as StaffRole[]).map(r => <option key={r}>{r}</option>)}
           </select>
           <select value={stationFilter} onChange={e => setStationFilter(e.target.value)} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
             <option>All</option>{stations.map(s => <option key={s}>{s}</option>)}
@@ -179,7 +179,7 @@ export default function StaffRosterPage() {
             <div className="grid grid-cols-3 gap-2">
               <Select value={form.role || "Agent"} onValueChange={v => setForm({ ...form, role: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{(["Supervisor","Agent","Dispatcher","Check-In","Ramp","Security","VIP","Admin"] as StaffRole[]).map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                <SelectContent>{(["Admin","Agent","Check-In","Dispatcher","Ramp","Security","Supervisor","VIP"] as StaffRole[]).map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
               <Input placeholder="Department" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
               <Input placeholder="Station" value={form.station} onChange={e => setForm({ ...form, station: e.target.value.toUpperCase() })} />
@@ -187,7 +187,7 @@ export default function StaffRosterPage() {
             <div className="grid grid-cols-3 gap-2">
               <Select value={form.shift} onValueChange={v => setForm({ ...form, shift: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="Morning">Morning</SelectItem><SelectItem value="Afternoon">Afternoon</SelectItem><SelectItem value="Night">Night</SelectItem><SelectItem value="Split">Split</SelectItem><SelectItem value="Off">Off</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="Afternoon">Afternoon</SelectItem><SelectItem value="Morning">Morning</SelectItem><SelectItem value="Night">Night</SelectItem><SelectItem value="Off">Off</SelectItem><SelectItem value="Split">Split</SelectItem></SelectContent>
               </Select>
               <Input type="time" placeholder="Shift Start" value={form.shift_start} onChange={e => setForm({ ...form, shift_start: e.target.value })} />
               <Input type="time" placeholder="Shift End" value={form.shift_end} onChange={e => setForm({ ...form, shift_end: e.target.value })} />

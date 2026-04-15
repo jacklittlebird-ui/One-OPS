@@ -52,7 +52,7 @@ const ROLE_COLORS: Record<AppRole, string> = {
   payables: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
 };
 
-const ALL_ROLES: AppRole[] = ["admin", "station_manager", "station_ops", "employee", "clearance", "contracts", "operations", "receivables", "payables"];
+const ALL_ROLES: AppRole[] = ["admin", "clearance", "contracts", "employee", "operations", "payables", "receivables", "station_manager", "station_ops"];
 
 export default function UsersPage() {
   const { user } = useAuth();

@@ -116,7 +116,7 @@ export default function AirportsPage() {
                   <label className="text-sm font-medium text-foreground mb-1 block">Country</label>
                   <Select value={form.country_id} onValueChange={v => setForm({ ...form, country_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Select Country" /></SelectTrigger>
-                    <SelectContent>{(countries || []).map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.code})</SelectItem>)}</SelectContent>
+                    <SelectContent>{(countries || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.code})</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
@@ -187,7 +187,7 @@ export default function AirportsPage() {
         </div>
         <Select value={countryFilter} onValueChange={v => { setCountryFilter(v); setPage(1); }}>
           <SelectTrigger className="w-48"><SelectValue placeholder="All Countries" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Countries</SelectItem>{(countries || []).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+          <SelectContent><SelectItem value="all">All Countries</SelectItem>{(countries || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(1); }}>
           <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
