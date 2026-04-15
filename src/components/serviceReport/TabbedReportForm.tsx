@@ -10,6 +10,7 @@ import {
   ReportFormData, ReportTab, REPORT_TABS, FLIGHT_STATUSES,
   CateringLineItem, HotacLineItem, FuelLineItem, DelayEntry
 } from "./ReportFormTypes";
+import PipelineStepper, { derivePipelineStage } from "./PipelineStepper";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
