@@ -156,7 +156,7 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
             <div className="text-center">
               <p className="font-semibold text-foreground">Upload Schedule File</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Supports Excel (.xlsx), CSV formats
+                Supports Excel (.xlsx), Word (.docx), PDF, CSV, and text files
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Auto-detects clearance format (Flight No, Route, STA/STD) and traffic report format (FltId, DepStn, ArrStn)
@@ -165,7 +165,7 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
             <Button onClick={() => fileRef.current?.click()}>
               <Upload size={14} className="mr-2" /> Select File
             </Button>
-            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} />
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.docx,.pdf,.txt,.tsv" className="hidden" onChange={handleFile} />
           </div>
         )}
 

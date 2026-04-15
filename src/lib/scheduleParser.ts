@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import * as mammoth from "mammoth";
 
 export type ParsedFlight = {
   flight_no: string;
@@ -55,12 +56,9 @@ function colNum(row: Record<string, any>, ...keys: string[]): number {
 
 function normalizeDate(val: string): string {
   if (!val) return "";
-  // Try ISO
   if (/^\d{4}-\d{2}-\d{2}/.test(val)) return val.slice(0, 10);
-  // DD/MM/YYYY
   const dmy = val.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
-  // Excel serial
   const num = Number(val);
   if (num > 30000 && num < 100000) {
     const d = new Date((num - 25569) * 86400 * 1000);
@@ -162,7 +160,6 @@ function parseTrafficRow(row: Record<string, any>, stationCodes: string[]): Pars
   };
 
   if (oMatch && dMatch) {
-    // Both match → 2 records
     results.push({ ...base, matched_station: origin, station_role: "departure", clearance_type: "Departure Handling" });
     results.push({ ...base, matched_station: destination, station_role: "arrival", clearance_type: "Arrival Handling" });
   } else if (dMatch) {
@@ -170,7 +167,6 @@ function parseTrafficRow(row: Record<string, any>, stationCodes: string[]): Pars
   } else if (oMatch) {
     results.push({ ...base, matched_station: origin, station_role: "departure", clearance_type: "Departure Handling" });
   } else {
-    // No match - still add but flag
     results.push({ ...base, matched_station: "", station_role: "", clearance_type: "Full Handling" });
   }
 
@@ -197,6 +193,94 @@ export function parseScheduleData(
   return { flights, format, unmatchedCount };
 }
 
+// ─── HTML table parser (for DOCX output) ─────────────────────────
+function parseHtmlTables(html: string): Record<string, any>[] {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const tables = doc.querySelectorAll("table");
+  const rows: Record<string, any>[] = [];
+
+  for (const table of Array.from(tables)) {
+    const trs = table.querySelectorAll("tr");
+    if (trs.length < 2) continue;
+
+    // First row as headers
+    const headers = Array.from(trs[0].querySelectorAll("th, td")).map(
+      (cell) => (cell.textContent || "").trim()
+    );
+    if (headers.length === 0) continue;
+
+    for (let i = 1; i < trs.length; i++) {
+      const cells = Array.from(trs[i].querySelectorAll("td, th"));
+      const row: Record<string, any> = {};
+      headers.forEach((h, j) => {
+        row[h] = (cells[j]?.textContent || "").trim();
+      });
+      rows.push(row);
+    }
+  }
+
+  return rows;
+}
+
+// ─── Plain text table parser (tab/pipe/multi-space delimited) ────
+function parseTextTable(text: string): Record<string, any>[] {
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  // Detect delimiter
+  const firstLine = lines[0];
+  let delimiter: RegExp;
+  if (firstLine.includes("\t")) {
+    delimiter = /\t+/;
+  } else if (firstLine.includes("|")) {
+    delimiter = /\s*\|\s*/;
+  } else {
+    delimiter = /\s{2,}/;
+  }
+
+  const headers = firstLine.split(delimiter).map(h => h.trim()).filter(Boolean);
+  if (headers.length < 2) return [];
+
+  const rows: Record<string, any>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    // Skip separator lines
+    if (/^[-=|+\s]+$/.test(lines[i])) continue;
+    const cells = lines[i].split(delimiter).map(c => c.trim());
+    if (cells.length < 2) continue;
+    const row: Record<string, any> = {};
+    headers.forEach((h, j) => {
+      row[h] = cells[j] || "";
+    });
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+// ─── PDF text extraction ──────────────────────────────────────────
+async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
+  const pdfjsLib = await import("pdfjs-dist");
+  
+  // Set worker to empty to use fake worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "";
+  
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const textParts: string[] = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map((item: any) => item.str)
+      .join(" ");
+    textParts.push(pageText);
+  }
+
+  return textParts.join("\n");
+}
+
+// ─── Main file reader (supports xlsx, xls, csv, docx, pdf, txt) ─
 export async function readFileAsRows(file: File): Promise<Record<string, any>[]> {
   const ext = file.name.split(".").pop()?.toLowerCase();
 
@@ -212,5 +296,34 @@ export async function readFileAsRows(file: File): Promise<Record<string, any>[]>
     return XLSX.utils.sheet_to_json<Record<string, any>>(wb.Sheets[wb.SheetNames[0]]);
   }
 
-  throw new Error(`Unsupported file format: .${ext}. Please use .xlsx, .xls, or .csv files.`);
+  if (ext === "docx") {
+    const buffer = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
+    const html = result.value;
+    // Try HTML tables first
+    const tableRows = parseHtmlTables(html);
+    if (tableRows.length > 0) return tableRows;
+    // Fallback: extract plain text and try to parse as delimited
+    const textResult = await mammoth.extractRawText({ arrayBuffer: buffer });
+    return parseTextTable(textResult.value);
+  }
+
+  if (ext === "pdf") {
+    const buffer = await file.arrayBuffer();
+    const text = await extractPdfText(buffer);
+    const rows = parseTextTable(text);
+    if (rows.length > 0) return rows;
+    throw new Error("Could not extract tabular data from PDF. Try converting to Excel or CSV first.");
+  }
+
+  if (ext === "txt" || ext === "tsv") {
+    const text = await file.text();
+    const rows = parseTextTable(text);
+    if (rows.length > 0) return rows;
+    // Try as CSV fallback
+    const wb = XLSX.read(text, { type: "string" });
+    return XLSX.utils.sheet_to_json<Record<string, any>>(wb.Sheets[wb.SheetNames[0]]);
+  }
+
+  throw new Error(`Unsupported file format: .${ext}. Please use Excel (.xlsx), CSV, Word (.docx), PDF, or text files.`);
 }
