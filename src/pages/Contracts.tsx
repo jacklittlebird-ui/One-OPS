@@ -31,7 +31,7 @@ const SERVICE_TABS = [
   { key: "Transportation", label: "Transportation", icon: <FileText size={14} /> },
 ];
 
-const SERVICE_SCOPES = ["Full Service", "Arrival Only", "Departure Only", "Turnaround", "Ad-Hoc", "Supervision Only"];
+const SERVICE_SCOPES = ["Full Service", "Arrival Only", "Departure Only", "Turnaround", "Ad-Hoc", "Supervision Only", "Maintenance"];
 
 type ServiceRate = {
   id?: string;
@@ -299,7 +299,7 @@ export default function ContractsPage() {
 const inputCls = "text-sm border rounded px-2 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground w-full";
 const selectCls = "text-sm border rounded px-2 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full";
 
-const SERVICE_SCOPES_LIST = ["Full Service", "Arrival Only", "Departure Only", "Turnaround", "Ad-Hoc", "Supervision Only"];
+const SERVICE_SCOPES_LIST = ["Full Service", "Arrival Only", "Departure Only", "Turnaround", "Ad-Hoc", "Supervision Only", "Maintenance"];
 const RATE_SERVICE_TYPES = ["Arrival", "Departure", "Turnaround", "Maintenance", "ADHOC", "Transportation"];
 
 function ContractFormWithRates({
