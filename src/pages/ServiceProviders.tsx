@@ -216,7 +216,7 @@ export default function ServiceProvidersPage() {
                       <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">— None —</SelectItem>
-                        {(countries || []).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        {(countries || []).slice().sort((a, b) => a.name.localeCompare(b.name)).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -226,7 +226,7 @@ export default function ServiceProvidersPage() {
                       <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">— None —</SelectItem>
-                        {filteredAirports.map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.iata_code})</SelectItem>)}
+                        {filteredAirports.slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.iata_code})</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

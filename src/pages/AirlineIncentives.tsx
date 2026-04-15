@@ -88,7 +88,7 @@ export default function AirlineIncentivesPage() {
             <div className="space-y-3">
               <Select value={form.airline_id} onValueChange={v => setForm({ ...form, airline_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Select Airline" /></SelectTrigger>
-                <SelectContent>{(airlines || []).map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.code})</SelectItem>)}</SelectContent>
+                <SelectContent>{(airlines || []).slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.code})</SelectItem>)}</SelectContent>
               </Select>
               <div className="grid grid-cols-2 gap-2">
                 <Select value={form.incentive_type} onValueChange={v => setForm({ ...form, incentive_type: v })}>
