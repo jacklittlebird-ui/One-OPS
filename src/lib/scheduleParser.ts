@@ -1,7 +1,6 @@
 import * as XLSX from "xlsx";
-import type { Database } from "@/integrations/supabase/types";
 
-type ServiceType = Database["public"]["Enums"]["service_type"];
+type ServiceType = string;
 
 export interface ParsedRow {
   flight_number: string;
