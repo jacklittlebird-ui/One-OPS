@@ -141,27 +141,35 @@ export default function StationDispatchPage() {
   // Filtered dispatches
   const filtered = useMemo(() => {
     let r = dispatches.filter(d => d.station === stationFilter);
-    if (dateFilter) r = r.filter(d => d.flight_date === dateFilter);
+    if (dateFrom) r = r.filter(d => d.flight_date >= dateFrom);
+    if (dateTo) r = r.filter(d => d.flight_date <= dateTo);
     if (search) {
       const s = search.toLowerCase();
       r = r.filter(d => d.flight_no.toLowerCase().includes(s) || d.airline.toLowerCase().includes(s) || d.staff_names.toLowerCase().includes(s));
     }
     return r;
-  }, [dispatches, stationFilter, dateFilter, search]);
+  }, [dispatches, stationFilter, dateFrom, dateTo, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Station flights for the day (unassigned)
+  // Station flights for the date range
   const stationFlights = useMemo(() => {
     return flights.filter(f => {
       const routeMatch = (f.route || "").toUpperCase().includes(stationFilter);
       const authorityMatch = (f.authority || "").toUpperCase() === stationFilter;
       const stationMatch = routeMatch || authorityMatch;
-      const dateMatch = f.arrival_date === dateFilter || f.departure_date === dateFilter;
-      return stationMatch && dateMatch;
+      const arrDate = f.arrival_date || "";
+      const depDate = f.departure_date || "";
+      const inRange = (d: string) => {
+        if (!d) return false;
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo && d > dateTo) return false;
+        return true;
+      };
+      return stationMatch && (inRange(arrDate) || inRange(depDate));
     });
-  }, [flights, stationFilter, dateFilter]);
+  }, [flights, stationFilter, dateFrom, dateTo]);
 
   const assignedFlightIds = useMemo(() => new Set(dispatches.filter(d => d.flight_schedule_id).map(d => d.flight_schedule_id)), [dispatches]);
 
@@ -176,7 +184,7 @@ export default function StationDispatchPage() {
       station: stationFilter,
       airline: airlineName,
       flight_no: flight.flight_no,
-      flight_date: dateFilter,
+      flight_date: dateFrom,
       service_type: sType,
       staff_names: "",
       staff_count: match?.rate?.staff_count || match?.contract?.default_team_size ? parseInt(match.contract.default_team_size) || 0 : 0,
@@ -206,7 +214,7 @@ export default function StationDispatchPage() {
       station: stationFilter,
       airline: "",
       flight_no: "",
-      flight_date: dateFilter,
+      flight_date: dateFrom,
       service_type: "Arrival",
       staff_names: "",
       staff_count: 0,
@@ -269,7 +277,7 @@ export default function StationDispatchPage() {
   if (isLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
 
   // KPIs
-  const todayDispatches = dispatches.filter(d => d.flight_date === dateFilter && d.station === stationFilter);
+  const todayDispatches = dispatches.filter(d => d.flight_date >= dateFrom && d.flight_date <= dateTo && d.station === stationFilter);
   const completedCount = todayDispatches.filter(d => d.status === "Completed").length;
   const overtimeTotal = todayDispatches.reduce((s, d) => s + (d.overtime_hours || 0), 0);
   const revenueTotal = todayDispatches.reduce((s, d) => s + (d.total_charge || 0), 0);
@@ -297,7 +305,14 @@ export default function StationDispatchPage() {
         <select value={stationFilter} onChange={e => { setStationFilter(e.target.value); setPage(1); }} className={selectCls + " w-40"}>
           {STATIONS.map(s => <option key={s.code} value={s.code}>{s.code} — {s.name}</option>)}
         </select>
-        <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className={inputCls + " w-40"} />
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs text-muted-foreground font-medium">From</label>
+          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} className={inputCls + " w-36"} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs text-muted-foreground font-medium">To</label>
+          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} className={inputCls + " w-36"} />
+        </div>
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input type="text" placeholder="Search…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
