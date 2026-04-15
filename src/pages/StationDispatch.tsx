@@ -162,9 +162,11 @@ export default function StationDispatchPage() {
   // Station flights for the date range
   const stationFlights = useMemo(() => {
     return flights.filter(f => {
-      const routeMatch = (f.route || "").toUpperCase().includes(stationFilter);
-      const authorityMatch = (f.authority || "").toUpperCase() === stationFilter;
-      const stationMatch = routeMatch || authorityMatch;
+      if (stationFilter) {
+        const routeMatch = (f.route || "").toUpperCase().includes(stationFilter);
+        const authorityMatch = (f.authority || "").toUpperCase() === stationFilter;
+        if (!(routeMatch || authorityMatch)) return false;
+      }
       const arrDate = f.arrival_date || "";
       const depDate = f.departure_date || "";
       const inRange = (d: string) => {
@@ -173,7 +175,7 @@ export default function StationDispatchPage() {
         if (dateTo && d > dateTo) return false;
         return true;
       };
-      if (!(stationMatch && (inRange(arrDate) || inRange(depDate)))) return false;
+      if (!(inRange(arrDate) || inRange(depDate))) return false;
       if (airlineFilter && f.airline_id) {
         const aName = airlineMap[f.airline_id]?.name || "";
         if (aName.toLowerCase() !== airlineFilter.toLowerCase()) return false;
