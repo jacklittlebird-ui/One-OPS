@@ -111,7 +111,8 @@ export default function StationDispatchPage() {
   const { data: airlines } = useSupabaseTable<{ id: string; name: string; iata_code: string }>("airlines");
 
   const [stationFilter, setStationFilter] = useState("CAI");
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().slice(0, 10));
+  const [dateFrom, setDateFrom] = useState(new Date().toISOString().slice(0, 10));
+  const [dateTo, setDateTo] = useState(new Date().toISOString().slice(0, 10));
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
