@@ -19,6 +19,93 @@ import ClearanceFormDialog from "@/components/clearances/ClearanceFormDialog";
 import ClearanceDetailDialog from "@/components/clearances/ClearanceDetailDialog";
 import ScheduleUploadDialog from "@/components/clearances/ScheduleUploadDialog";
 
+// ─── Calendar View Component ───
+function CalendarView({ flights, month, onMonthChange, airlineMap, onView, onEdit }: {
+  flights: ClearanceRow[];
+  month: Date;
+  onMonthChange: (d: Date) => void;
+  airlineMap: Record<string, any>;
+  onView: (c: ClearanceRow) => void;
+  onEdit: (c: ClearanceRow) => void;
+}) {
+  const year = month.getFullYear();
+  const mo = month.getMonth();
+  const firstDay = new Date(year, mo, 1).getDay();
+  const daysInMonth = new Date(year, mo + 1, 0).getDate();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const byDate = useMemo(() => {
+    const map: Record<string, ClearanceRow[]> = {};
+    flights.forEach(f => {
+      const d = f.arrival_date || f.departure_date || "";
+      if (d) {
+        if (!map[d]) map[d] = [];
+        map[d].push(f);
+      }
+    });
+    return map;
+  }, [flights]);
+
+  const prev = () => onMonthChange(new Date(year, mo - 1, 1));
+  const next = () => onMonthChange(new Date(year, mo + 1, 1));
+  const monthLabel = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const statusColor = (s: string) =>
+    s === "Approved" ? "bg-success/20 text-success border-success/30" :
+    s === "Pending" ? "bg-warning/20 text-warning border-warning/30" :
+    s === "Rejected" ? "bg-destructive/20 text-destructive border-destructive/30" :
+    "bg-muted text-muted-foreground border-muted";
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={prev}><ChevronLeft size={16} /></Button>
+          <h3 className="text-sm font-semibold">{monthLabel}</h3>
+          <Button variant="ghost" size="sm" onClick={next}><ChevronRight size={16} /></Button>
+        </div>
+        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+            <div key={d} className="bg-muted/50 text-center text-xs font-semibold text-muted-foreground py-2">{d}</div>
+          ))}
+          {cells.map((day, i) => {
+            if (day === null) return <div key={`e${i}`} className="bg-card min-h-[90px]" />;
+            const dateStr = `${year}-${String(mo + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const dayFlights = byDate[dateStr] || [];
+            const isToday = dateStr === today;
+            return (
+              <div key={dateStr} className={`bg-card min-h-[90px] p-1 ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}>
+                <div className={`text-xs font-medium mb-0.5 ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>{day}</div>
+                <div className="space-y-0.5 max-h-[70px] overflow-y-auto">
+                  {dayFlights.slice(0, 4).map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => onView(f)}
+                      className={`w-full text-left px-1 py-0.5 rounded text-[10px] leading-tight truncate border ${statusColor(f.status)} hover:opacity-80 transition-opacity`}
+                      title={`${f.flight_no} ${f.route} (${f.status})`}
+                    >
+                      <span className="font-mono font-semibold">{f.flight_no}</span>
+                      {f.sta && <span className="ml-1 opacity-70">{f.sta}</span>}
+                    </button>
+                  ))}
+                  {dayFlights.length > 4 && (
+                    <div className="text-[10px] text-muted-foreground text-center">+{dayFlights.length - 4} more</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ClearancesPage() {
   const { data, isLoading, refetch, add, update, remove } = useSupabaseTable<ClearanceRow>("flight_schedules");
   const { data: airlines } = useQuery({ queryKey: ["airlines"], queryFn: async () => { const { data } = await supabase.from("airlines").select("id,name,code"); return data || []; } });
