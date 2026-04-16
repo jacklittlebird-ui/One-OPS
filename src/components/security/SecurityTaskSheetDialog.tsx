@@ -77,13 +77,14 @@ interface Props {
   row: DispatchRow | null;
   onClose: () => void;
   onSave: (row: DispatchRow, taskSheet: TaskSheetData) => void;
-  // Additional info from flight schedule
   registration?: string;
   route?: string;
   sta?: string;
   std?: string;
   ata?: string;
   atd?: string;
+  skdType?: string;
+  serviceType?: string;
 }
 
 const FLIGHT_TYPES = SKD_TYPES;
@@ -92,7 +93,7 @@ const inputCls = "text-sm border border-border rounded px-2.5 py-2 bg-card text-
 const readOnlyCls = "text-sm border border-border rounded px-2.5 py-2 bg-muted/50 text-foreground w-full cursor-default";
 const sectionHeaderCls = "bg-primary/10 text-primary font-bold text-sm px-3 py-2 rounded-t border border-primary/20";
 
-export default function SecurityTaskSheetDialog({ row, onClose, onSave, registration, route, sta, std, ata, atd }: Props) {
+export default function SecurityTaskSheetDialog({ row, onClose, onSave, registration, route, sta, std, ata, atd, skdType, serviceType }: Props) {
   const [sheet, setSheet] = useState<TaskSheetData>(emptyTaskSheet());
   const printRef = useRef<HTMLDivElement>(null);
 
