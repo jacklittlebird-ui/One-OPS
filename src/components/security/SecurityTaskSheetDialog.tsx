@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Shield, Printer, Download } from "lucide-react";
 import { SKD_TYPES, SECURITY_CLEARANCE_TYPES } from "@/components/clearances/ClearanceTypes";
 import { Json } from "@/integrations/supabase/types";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+/** Auto-format time input as HH:MM */
+function formatTimeInput(value: string, prevValue: string): string {
+  let v = value.replace(/[^0-9:]/g, "");
+  if (v.length === 2 && !v.includes(":") && prevValue?.length !== 3) v += ":";
+  if (v.length > 5) v = v.slice(0, 5);
+  return v;
+}
 
 interface TaskSheetData {
   flight_type: string; // SKD Type value
