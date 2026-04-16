@@ -227,6 +227,7 @@ interface ScheduleSourceRow {
   station: string;
   arrivalDate: string;
   departureDate: string;
+  clearanceStatus: string;
 }
 
 function resolveStationFromRoute(route: string) {
