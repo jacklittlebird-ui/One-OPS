@@ -185,12 +185,12 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
     if (!row) return;
     const v = sheet;
     const flightDate = formatDate(row.flight_date);
-    const reg = registration || "—";
-    const rt = route || "—";
-    const staVal = sta || "—";
-    const stdVal = std || "—";
-    const ataVal = ata || row.actual_start || "—";
-    const atdVal = atd || row.actual_end || "—";
+    const reg = editableRow?.registration || registration || "—";
+    const rt = editableRow?.route || route || "—";
+    const staVal = v.sta || sta || "—";
+    const stdVal = v.std || std || "—";
+    const ataVal = v.ata || ata || "—";
+    const atdVal = v.atd || atd || "—";
 
     const ftChecks = FLIGHT_TYPES.map(ft =>
       `<td style="text-align:center;border:1px solid #333;padding:4px 6px;font-size:11px;">${ft === v.flight_type ? "☒" : "☐"} ${ft}</td>`
