@@ -217,6 +217,12 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
     <td class="mono">${stdVal}</td>
     <td class="label">ATD</td>
     <td class="mono">${atdVal}</td>
+    <td class="label">Service Type</td>
+    <td colspan="5" class="value-cell" style="font-size:13px;font-weight:600;">${serviceType || row.service_type || "—"}</td>
+  </tr>
+  <tr>
+    <td class="label" colspan="2"></td>
+    <td colspan="2"></td>
     <td class="label">Delay</td>
     <td colspan="5" class="value-cell">${v.delay || ""}</td>
   </tr>
