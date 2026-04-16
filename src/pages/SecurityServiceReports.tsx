@@ -169,7 +169,7 @@ export default function SecurityServiceReportsPage() {
 
   // Build lookup for flight schedule details (registration, route, sta, std)
   const flightDetailsById = useMemo(() => {
-    const map = new Map<string, { registration: string; route: string; sta: string; std: string; ata: string; atd: string }>();
+    const map = new Map<string, { registration: string; route: string; sta: string; std: string; ata: string; atd: string; skd_type: string; clearance_type: string }>();
     securityFlights.forEach((f: any) => map.set(f.id, {
       registration: f.registration || "",
       route: f.route || "",
@@ -177,6 +177,8 @@ export default function SecurityServiceReportsPage() {
       std: f.std || "",
       ata: "",
       atd: "",
+      skd_type: f.skd_type || "",
+      clearance_type: f.clearance_type || "",
     }));
     return map;
   }, [securityFlights]);
