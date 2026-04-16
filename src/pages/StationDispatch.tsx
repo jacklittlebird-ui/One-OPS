@@ -275,7 +275,7 @@ export default function StationDispatchPage() {
       }
       return true;
     });
-  }, [flights, stationFilter, dateFrom, dateTo, airlineFilter, airlineMap]);
+  }, [flights, stationFilter, dateFrom, dateTo, airlineFilter, airlineMap, serviceCategory]);
 
   const assignedFlightIds = useMemo(() => new Set(dispatches.filter(d => d.flight_schedule_id).map(d => d.flight_schedule_id)), [dispatches]);
 
