@@ -49,6 +49,28 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+function Section({ title, icon, accent = "text-primary", iconBg = "bg-primary/10", children, right }: {
+  title: string;
+  icon?: React.ReactNode;
+  accent?: string;
+  iconBg?: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b bg-muted/30">
+        <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${accent}`}>
+          {icon && <span className={`h-6 w-6 rounded-md ${iconBg} ${accent} flex items-center justify-center`}>{icon}</span>}
+          {title}
+        </h3>
+        {right}
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
 /** Convert ISO string (yyyy-mm-dd) to Date or undefined */
 function toDate(val: string | null | undefined): Date | undefined {
   if (!val) return undefined;
@@ -436,25 +458,43 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
   const flightLabel = data.flightNo ? `${data.flightNo}` : "New Report";
   const routeLabel = data.route || "";
 
+  const totalCostPreview = ((data.civilAviationFee || 0) + (data.handlingFee || 0) + (data.airportCharge || 0)
+    + (data.fuelCharge || 0) + (data.cateringCharge || 0) + (data.hotacCharge || 0)).toFixed(2);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm">
-      <div className="bg-card rounded-xl border shadow-2xl w-full max-w-5xl max-h-[94vh] overflow-hidden m-4 flex flex-col">
-        {/* Header */}
-        <div className="bg-card border-b px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-foreground text-lg flex items-center gap-2">
-              <FileBarChart2 size={18} className="text-primary" />{title}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              <span className="text-primary font-semibold">{flightLabel}</span>
-              {routeLabel && <> · {routeLabel}</>}
-            </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 backdrop-blur-sm p-4">
+      <div className="bg-card rounded-2xl border shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+        {/* Header — gradient with summary chips */}
+        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b px-6 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-11 w-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 ring-1 ring-primary/20">
+                <FileBarChart2 size={20} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-bold text-foreground text-lg leading-tight truncate">{title}</h2>
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs mt-0.5">
+                  <span className="font-bold text-primary">{flightLabel}</span>
+                  {routeLabel && <span className="text-muted-foreground">· {routeLabel}</span>}
+                  {data.station && <span className="text-muted-foreground">· {data.station}</span>}
+                  {data.handlingType && (
+                    <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-semibold">{data.handlingType}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex flex-col items-end px-3 py-1.5 rounded-lg bg-card/70 border">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Cost</span>
+                <span className="text-sm font-bold text-success">{data.currency || "USD"} {totalCostPreview}</span>
+              </div>
+              <button onClick={onCancel} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors"><X size={18} /></button>
+            </div>
           </div>
-          <button onClick={onCancel} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground"><X size={18} /></button>
         </div>
 
         {/* Pipeline stepper - hidden in print/download views */}
-        <div className="px-6 py-3 border-b bg-muted/20 flex items-center justify-center print:hidden no-print">
+        <div className="px-6 py-3 border-b bg-muted/30 flex items-center justify-center print:hidden no-print">
            <PipelineStepper
             currentStage={derivePipelineStage({
               isLinked: !!data.id,
@@ -466,15 +506,16 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
         </div>
 
         {/* Flight status bar */}
-        <div className="px-6 py-2 border-b flex items-center gap-1 bg-muted/30">
-          {FLIGHT_STATUSES.map((s, i) => (
+        <div className="px-6 py-2.5 border-b flex items-center gap-2 bg-muted/20">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mr-1">Status</span>
+          {FLIGHT_STATUSES.map((s) => (
             <button
               key={s}
               onClick={() => set("flightStatus", s)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                 data.flightStatus === s
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-primary text-primary-foreground shadow-sm scale-[1.02]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted bg-card/60 border"
               }`}
             >
               {s}
@@ -483,28 +524,28 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
         </div>
 
         {/* Tab navigation */}
-        <div className="px-6 py-2 border-b flex flex-wrap gap-1 bg-muted/20">
+        <div className="px-4 pt-2 border-b flex flex-wrap gap-1 bg-card overflow-x-auto">
           {REPORT_TABS.map(t => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap border-b-2 -mb-px ${
                 activeTab === t.key
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground hover:text-foreground border-transparent hover:border-border"
               }`}
             >
-              {tabIcons[t.key]}{t.label}
+              <span className={activeTab === t.key ? "text-primary" : "text-muted-foreground"}>{tabIcons[t.key]}</span>
+              {t.label}
             </button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
           {activeTab === "flight" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-primary uppercase tracking-wider mb-3 flex items-center gap-2"><Plane size={14} />Flight Info</h3>
+            <div className="space-y-4">
+              <Section title="Flight Info" icon={<Plane size={14} />}>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <FormField label="Account / Operator"><input className={inputCls} value={data.operator || ""} onChange={e => set("operator", e.target.value)} placeholder="TRANSAVIA FRANCE" /></FormField>
                   <FormField label="Flight Number"><input className={inputCls} value={data.flightNo || ""} onChange={e => set("flightNo", e.target.value)} placeholder="TO123/4" /></FormField>
@@ -535,38 +576,33 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                     </select>
                   </FormField>
                 </div>
-              </div>
-              {/* Services & Tags */}
-              <div>
-                <h3 className="text-sm font-bold text-accent uppercase tracking-wider mb-3">Services & Tags</h3>
+              </Section>
+              <Section title="Services & Tags" accent="text-accent" iconBg="bg-accent/10">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <FormField label="Project Tags"><input className={inputCls} value={data.projectTags || ""} onChange={e => set("projectTags", e.target.value)} /></FormField>
                   <FormField label="Check-In System"><input className={inputCls} value={data.checkInSystem || ""} onChange={e => set("checkInSystem", e.target.value)} /></FormField>
                 </div>
-              </div>
+              </Section>
             </div>
           )}
 
           {activeTab === "passengers" && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-bold text-primary uppercase tracking-wider mb-3 border-b pb-2">Foreign Passengers</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Section title="Foreign Passengers" icon={<Users size={14} />}>
                   <div className="grid grid-cols-2 gap-4">
                     <FormField label="Foreign Pax IN"><input type="number" className={inputCls} value={data.foreignPaxIn || ""} onChange={e => set("foreignPaxIn", +e.target.value)} /></FormField>
                     <FormField label="Foreign Pax OUT"><input type="number" className={inputCls} value={data.foreignPaxOut || ""} onChange={e => set("foreignPaxOut", +e.target.value)} /></FormField>
                   </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-primary uppercase tracking-wider mb-3 border-b pb-2">Egyptian Passengers</h3>
+                </Section>
+                <Section title="Egyptian Passengers" icon={<Users size={14} />} accent="text-accent" iconBg="bg-accent/10">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField label="Egyptian Pax IN"><input type="number" className={inputCls} value={data.egyptianPaxIn || ""} onChange={e => set("egyptianPaxIn", +e.target.value)} /></FormField>
                     <FormField label="Egyptian Pax OUT"><input type="number" className={inputCls} value={data.egyptianPaxOut || ""} onChange={e => set("egyptianPaxOut", +e.target.value)} /></FormField>
                   </div>
-                </div>
+                </Section>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 border-b pb-2">Other</h3>
+              <Section title="Other" accent="text-muted-foreground" iconBg="bg-muted">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <FormField label="Infant In"><input type="number" className={inputCls} value={data.infantIn || ""} onChange={e => set("infantIn", +e.target.value)} /></FormField>
                   <FormField label="Infant Out"><input type="number" className={inputCls} value={data.infantOut || ""} onChange={e => set("infantOut", +e.target.value)} /></FormField>
@@ -575,9 +611,8 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="Total on Board"><input type="number" className={readOnlyCls} value={data.totalDepartingPax || ""} readOnly /></FormField>
                   <FormField label="Total Foreign Pax OUT"><input type="number" className={readOnlyCls} value={data.totalForeignPaxOut || ""} readOnly /></FormField>
                 </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-success uppercase tracking-wider mb-3 border-b pb-2">Estimated Billing (Preview Only)</h3>
+              </Section>
+              <Section title="Estimated Billing (Preview Only)" icon={<DollarSign size={14} />} accent="text-success" iconBg="bg-success/10">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <FormField label="Estimated Foreign Pax Bill (USD)"><input type="number" step="0.01" className={readOnlyCls} value={data.estimatedForeignBill || ""} readOnly /></FormField>
                   <FormField label="Estimated Local Pax Bill (EGP)"><input type="number" step="0.01" className={readOnlyCls} value={data.estimatedLocalBill || ""} readOnly /></FormField>
@@ -587,14 +622,13 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="State Resource Dev. Fees (EGP)"><input type="number" step="0.01" className={readOnlyCls} value={data.stateResourceDevFee || ""} readOnly /></FormField>
                   <FormField label="Police Service Fees (EGP)"><input type="number" step="0.01" className={readOnlyCls} value={data.policeServiceFee || ""} readOnly /></FormField>
                 </div>
-              </div>
+              </Section>
             </div>
           )}
 
           {activeTab === "timing" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-info uppercase tracking-wider mb-3 flex items-center gap-2"><Clock size={14} />Aircraft Movement Timings</h3>
+            <div className="space-y-4">
+              <Section title="Aircraft Movement Timings" icon={<Clock size={14} />} accent="text-info" iconBg="bg-info/10">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <TimeField label="STA (Read-Only)" value={data.sta || ""} readOnly />
                   <TimeField label="STD (Read-Only)" value={data.std || ""} readOnly />
@@ -603,9 +637,8 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <TimeField label="Chocks Off (O/B)" value={data.ob || ""} onChange={v => set("ob", v)} />
                   <TimeField label="Take Off (T/O)" value={data.to || ""} onChange={v => set("to", v)} />
                 </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-warning uppercase tracking-wider mb-3">Parking / Housing Duration</h3>
+              </Section>
+              <Section title="Parking / Housing Duration" accent="text-warning" iconBg="bg-warning/10">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <FormField label="Landing Time">
                     <input className={readOnlyCls} value={autoDayNight(data.td || "", data.arrivalDate || "") === "D" ? "Day Landing" : "Night Landing"} readOnly />
@@ -623,10 +656,13 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="Total Parking Time (Hrs)"><input className={readOnlyCls} value={(() => { const gt = data.groundTime || calcGroundTime(data.co || "", data.ob || ""); if (!gt) return ""; const [h, m] = gt.split(":").map(Number); if (isNaN(h) || isNaN(m)) return ""; const totalMin = Math.max(0, h * 60 + m - 120); return `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, "0")}`; })()} readOnly /></FormField>
                   <FormField label="Housing (Days)"><input type="number" step="0.01" className={readOnlyCls} value={data.housingDays || ""} readOnly /></FormField>
                 </div>
-              </div>
-              {/* Delay Codes */}
-              <div>
-                <h3 className="text-sm font-bold text-destructive uppercase tracking-wider mb-3">Delay Codes (up to 4)</h3>
+              </Section>
+              <Section title="Delay Codes (up to 4)" accent="text-destructive" iconBg="bg-destructive/10"
+                right={delays.length < 4 ? (
+                  <button onClick={() => onChange({ ...data, delays: [...delays, { code: "", timing: 0, explanation: "" }] })} className="toolbar-btn-outline text-xs"><Plus size={12} /> Add Delay</button>
+                ) : null}
+              >
+                {delays.length === 0 && <p className="text-xs text-muted-foreground italic">No delays recorded.</p>}
                 {delays.map((d, i) => (
                   <div key={i} className="grid grid-cols-[1fr_80px_2fr_auto] gap-2 mb-2 items-end">
                     <FormField label={`DLY Code ${i + 1}`}>
@@ -646,17 +682,13 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                     <button onClick={() => onChange({ ...data, delays: delays.filter((_, idx) => idx !== i) })} className="p-1.5 text-destructive hover:text-destructive/80 mb-0.5"><X size={14} /></button>
                   </div>
                 ))}
-                {delays.length < 4 && (
-                  <button onClick={() => onChange({ ...data, delays: [...delays, { code: "", timing: 0, explanation: "" }] })} className="toolbar-btn-outline text-xs mt-1"><Plus size={12} /> Add Delay</button>
-                )}
-              </div>
+              </Section>
             </div>
           )}
 
           {activeTab === "civil-aviation" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-primary uppercase tracking-wider mb-3 flex items-center gap-2 border-b pb-2"><Building2 size={14} />Flight Details</h3>
+            <div className="space-y-4">
+              <Section title="Flight Details" icon={<Building2 size={14} />}>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <FormField label="Flight No"><input className={readOnlyCls} value={data.flightNo || ""} readOnly /></FormField>
                   <FormField label="MTOW (Tons)"><input className={readOnlyCls} value={data.mtow || ""} readOnly /></FormField>
@@ -664,18 +696,18 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="Route"><input className={readOnlyCls} value={data.route || ""} readOnly /></FormField>
                   <DatePickerField label="Departure Date" value={data.departureDate || ""} onChange={() => {}} readOnly />
                 </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-success uppercase tracking-wider mb-3 border-b pb-2">Charges Summary</h3>
+              </Section>
+              <Section title="Charges Summary" icon={<DollarSign size={14} />} accent="text-success" iconBg="bg-success/10"
+                right={<span className="text-sm font-bold text-success">{data.currency || "USD"} {(data.civilAviationFee || 0).toFixed(2)}</span>}
+              >
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <FormField label="Landing Charge ($)"><input type="number" className={readOnlyCls} value={data.landingCharge || ""} readOnly /></FormField>
                   <FormField label="Parking Charge ($)"><input type="number" className={readOnlyCls} value={data.parkingCharge || ""} readOnly /></FormField>
                   <FormField label="Housing Charge ($)"><input type="number" className={readOnlyCls} value={data.housingCharge || ""} readOnly /></FormField>
                   <FormField label="Total Civil Aviation ($)"><input type="number" className={readOnlyCls + " font-bold"} value={data.civilAviationFee || ""} readOnly /></FormField>
                 </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-warning uppercase tracking-wider mb-3 border-b pb-2">Optional Services (Qty — Included in Egyptian/EGP Bill)</h3>
+              </Section>
+              <Section title="Optional Services (Qty — Included in Egyptian/EGP Bill)" accent="text-warning" iconBg="bg-warning/10">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <FormField label="Fire Cart Qty"><input type="number" className={inputCls} value={data.fireCartQty || ""} onChange={e => set("fireCartQty", +e.target.value)} /></FormField>
                   <FormField label="Follow Me Qty"><input type="number" className={inputCls} value={data.followMeQty || ""} onChange={e => set("followMeQty", +e.target.value)} /></FormField>
@@ -684,103 +716,21 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="File FLT Plan Qty"><input type="number" className={inputCls} value={data.fileFltPlanQty || ""} onChange={e => set("fileFltPlanQty", +e.target.value)} /></FormField>
                   <FormField label="Print Operational FLT Plan Qty"><input type="number" className={inputCls} value={data.printOpsFltPlanQty || ""} onChange={e => set("printOpsFltPlanQty", +e.target.value)} /></FormField>
                 </div>
-              </div>
+              </Section>
             </div>
           )}
 
           {activeTab === "catering" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <UtensilsCrossed size={14} />Catering
-                </h3>
-                <span className="text-sm font-semibold text-foreground">Grand Total: {(data.cateringCharge || 0).toFixed(2)}</span>
-              </div>
-              <p className="text-xs text-primary font-semibold">{data.flightNo} / {data.route}</p>
-              <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className="data-table-header px-4 py-2.5 text-left">Catering Item</th>
-                      <th className="data-table-header px-4 py-2.5 text-left">Supplier</th>
-                      <th className="data-table-header px-4 py-2.5 text-left w-24">Quantity</th>
-                      <th className="data-table-header px-4 py-2.5 text-left w-28">Price / Unit</th>
-                      <th className="data-table-header px-4 py-2.5 text-left w-28">Total</th>
-                      <th className="data-table-header px-4 py-2.5 w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data.cateringItems || []).map((item, i) => (
-                      <tr key={i} className="data-table-row">
-                        <td className="px-4 py-2"><input className={inputCls} value={item.catering_item} onChange={e => setCateringLine(i, "catering_item", e.target.value)} /></td>
-                        <td className="px-4 py-2"><input className={inputCls} value={item.supplier} onChange={e => setCateringLine(i, "supplier", e.target.value)} /></td>
-                        <td className="px-4 py-2"><input type="number" className={inputCls} value={item.quantity} onChange={e => setCateringLine(i, "quantity", +e.target.value)} /></td>
-                        <td className="px-4 py-2"><input type="number" step="0.01" className={inputCls} value={item.price_per_unit} onChange={e => setCateringLine(i, "price_per_unit", +e.target.value)} /></td>
-                        <td className="px-4 py-2 font-semibold text-foreground">{item.total.toFixed(2)}</td>
-                        <td className="px-4 py-2"><button onClick={() => removeCateringLine(i)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <button onClick={addCateringLine} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"><Plus size={12} /> Add a line</button>
-            </div>
-          )}
-
-          {activeTab === "hotac" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2">
-                  <BedDouble size={14} />HOTAC
-                </h3>
-                <span className="text-sm font-semibold text-foreground">Grand Total: {(data.hotacCharge || 0).toFixed(2)}</span>
-              </div>
-              <p className="text-xs text-primary font-semibold">{data.flightNo} / {data.route}</p>
-              <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className="data-table-header px-4 py-2.5 text-left">Hotel Name</th>
-                      <th className="data-table-header px-4 py-2.5 text-left">Room Classification</th>
-                      <th className="data-table-header px-4 py-2.5 text-left">Type of Service</th>
-                      <th className="data-table-header px-4 py-2.5 text-left w-24">Quantity</th>
-                      <th className="data-table-header px-4 py-2.5 text-left w-28">Price / Night</th>
-                      <th className="data-table-header px-4 py-2.5 text-left w-28">Total</th>
-                      <th className="data-table-header px-4 py-2.5 w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data.hotacItems || []).map((item, i) => (
-                      <tr key={i} className="data-table-row">
-                        <td className="px-4 py-2"><input className={inputCls} value={item.hotel_name} onChange={e => setHotacLine(i, "hotel_name", e.target.value)} /></td>
-                        <td className="px-4 py-2"><input className={inputCls} value={item.room_classification} onChange={e => setHotacLine(i, "room_classification", e.target.value)} /></td>
-                        <td className="px-4 py-2"><input className={inputCls} value={item.type_of_service} onChange={e => setHotacLine(i, "type_of_service", e.target.value)} /></td>
-                        <td className="px-4 py-2"><input type="number" className={inputCls} value={item.quantity} onChange={e => setHotacLine(i, "quantity", +e.target.value)} /></td>
-                        <td className="px-4 py-2"><input type="number" step="0.01" className={inputCls} value={item.price_per_night} onChange={e => setHotacLine(i, "price_per_night", +e.target.value)} /></td>
-                        <td className="px-4 py-2 font-semibold text-foreground">{item.total.toFixed(2)}</td>
-                        <td className="px-4 py-2"><button onClick={() => removeHotacLine(i)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <button onClick={addHotacLine} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"><Plus size={12} /> Add a line</button>
-            </div>
-          )}
-
-          {activeTab === "fuel-handling" && (
-            <div className="space-y-6">
-              {/* Fuel */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2"><Fuel size={14} />Fuel</h3>
-                  <span className="text-sm font-semibold text-foreground">Fuel Total: {(data.fuelCharge || 0).toFixed(2)}</span>
-                </div>
+            <Section title="Catering" icon={<UtensilsCrossed size={14} />}
+              right={<span className="text-sm font-bold text-success">{data.currency || "USD"} {(data.cateringCharge || 0).toFixed(2)}</span>}
+            >
+              <div className="space-y-3">
+                <p className="text-xs text-primary font-semibold">{data.flightNo} / {data.route}</p>
                 <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full text-sm">
                     <thead>
                       <tr>
-                        <th className="data-table-header px-4 py-2.5 text-left">Fuel Type</th>
+                        <th className="data-table-header px-4 py-2.5 text-left">Catering Item</th>
                         <th className="data-table-header px-4 py-2.5 text-left">Supplier</th>
                         <th className="data-table-header px-4 py-2.5 text-left w-24">Quantity</th>
                         <th className="data-table-header px-4 py-2.5 text-left w-28">Price / Unit</th>
@@ -789,25 +739,111 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                       </tr>
                     </thead>
                     <tbody>
-                      {(data.fuelItems || []).map((item, i) => (
+                      {(data.cateringItems || []).length === 0 && (
+                        <tr><td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground italic">No items yet. Click "Add a line" to get started.</td></tr>
+                      )}
+                      {(data.cateringItems || []).map((item, i) => (
                         <tr key={i} className="data-table-row">
-                          <td className="px-4 py-2"><input className={inputCls} value={item.fuel_type} onChange={e => setFuelLine(i, "fuel_type", e.target.value)} /></td>
-                          <td className="px-4 py-2"><input className={inputCls} value={item.supplier} onChange={e => setFuelLine(i, "supplier", e.target.value)} /></td>
-                          <td className="px-4 py-2"><input type="number" className={inputCls} value={item.quantity} onChange={e => setFuelLine(i, "quantity", +e.target.value)} /></td>
-                          <td className="px-4 py-2"><input type="number" step="0.01" className={inputCls} value={item.price_per_unit} onChange={e => setFuelLine(i, "price_per_unit", +e.target.value)} /></td>
+                          <td className="px-4 py-2"><input className={inputCls} value={item.catering_item} onChange={e => setCateringLine(i, "catering_item", e.target.value)} /></td>
+                          <td className="px-4 py-2"><input className={inputCls} value={item.supplier} onChange={e => setCateringLine(i, "supplier", e.target.value)} /></td>
+                          <td className="px-4 py-2"><input type="number" className={inputCls} value={item.quantity} onChange={e => setCateringLine(i, "quantity", +e.target.value)} /></td>
+                          <td className="px-4 py-2"><input type="number" step="0.01" className={inputCls} value={item.price_per_unit} onChange={e => setCateringLine(i, "price_per_unit", +e.target.value)} /></td>
                           <td className="px-4 py-2 font-semibold text-foreground">{item.total.toFixed(2)}</td>
-                          <td className="px-4 py-2"><button onClick={() => removeFuelLine(i)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button></td>
+                          <td className="px-4 py-2"><button onClick={() => removeCateringLine(i)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <button onClick={addFuelLine} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"><Plus size={12} /> Add a line</button>
+                <button onClick={addCateringLine} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"><Plus size={12} /> Add a line</button>
               </div>
+            </Section>
+          )}
 
-              {/* Handling */}
-              <div>
-                <h3 className="text-sm font-bold text-success uppercase tracking-wider mb-3 flex items-center gap-2 border-b pb-2"><DollarSign size={14} />Handling & Totals</h3>
+          {activeTab === "hotac" && (
+            <Section title="HOTAC" icon={<BedDouble size={14} />}
+              right={<span className="text-sm font-bold text-success">{data.currency || "USD"} {(data.hotacCharge || 0).toFixed(2)}</span>}
+            >
+              <div className="space-y-3">
+                <p className="text-xs text-primary font-semibold">{data.flightNo} / {data.route}</p>
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="data-table-header px-4 py-2.5 text-left">Hotel Name</th>
+                        <th className="data-table-header px-4 py-2.5 text-left">Room Classification</th>
+                        <th className="data-table-header px-4 py-2.5 text-left">Type of Service</th>
+                        <th className="data-table-header px-4 py-2.5 text-left w-24">Quantity</th>
+                        <th className="data-table-header px-4 py-2.5 text-left w-28">Price / Night</th>
+                        <th className="data-table-header px-4 py-2.5 text-left w-28">Total</th>
+                        <th className="data-table-header px-4 py-2.5 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(data.hotacItems || []).length === 0 && (
+                        <tr><td colSpan={7} className="px-4 py-6 text-center text-xs text-muted-foreground italic">No items yet. Click "Add a line" to get started.</td></tr>
+                      )}
+                      {(data.hotacItems || []).map((item, i) => (
+                        <tr key={i} className="data-table-row">
+                          <td className="px-4 py-2"><input className={inputCls} value={item.hotel_name} onChange={e => setHotacLine(i, "hotel_name", e.target.value)} /></td>
+                          <td className="px-4 py-2"><input className={inputCls} value={item.room_classification} onChange={e => setHotacLine(i, "room_classification", e.target.value)} /></td>
+                          <td className="px-4 py-2"><input className={inputCls} value={item.type_of_service} onChange={e => setHotacLine(i, "type_of_service", e.target.value)} /></td>
+                          <td className="px-4 py-2"><input type="number" className={inputCls} value={item.quantity} onChange={e => setHotacLine(i, "quantity", +e.target.value)} /></td>
+                          <td className="px-4 py-2"><input type="number" step="0.01" className={inputCls} value={item.price_per_night} onChange={e => setHotacLine(i, "price_per_night", +e.target.value)} /></td>
+                          <td className="px-4 py-2 font-semibold text-foreground">{item.total.toFixed(2)}</td>
+                          <td className="px-4 py-2"><button onClick={() => removeHotacLine(i)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button onClick={addHotacLine} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"><Plus size={12} /> Add a line</button>
+              </div>
+            </Section>
+          )}
+
+          {activeTab === "fuel-handling" && (
+            <div className="space-y-4">
+              <Section title="Fuel" icon={<Fuel size={14} />}
+                right={<span className="text-sm font-bold text-success">{data.currency || "USD"} {(data.fuelCharge || 0).toFixed(2)}</span>}
+              >
+                <div className="space-y-3">
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th className="data-table-header px-4 py-2.5 text-left">Fuel Type</th>
+                          <th className="data-table-header px-4 py-2.5 text-left">Supplier</th>
+                          <th className="data-table-header px-4 py-2.5 text-left w-24">Quantity</th>
+                          <th className="data-table-header px-4 py-2.5 text-left w-28">Price / Unit</th>
+                          <th className="data-table-header px-4 py-2.5 text-left w-28">Total</th>
+                          <th className="data-table-header px-4 py-2.5 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.fuelItems || []).length === 0 && (
+                          <tr><td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground italic">No items yet. Click "Add a line" to get started.</td></tr>
+                        )}
+                        {(data.fuelItems || []).map((item, i) => (
+                          <tr key={i} className="data-table-row">
+                            <td className="px-4 py-2"><input className={inputCls} value={item.fuel_type} onChange={e => setFuelLine(i, "fuel_type", e.target.value)} /></td>
+                            <td className="px-4 py-2"><input className={inputCls} value={item.supplier} onChange={e => setFuelLine(i, "supplier", e.target.value)} /></td>
+                            <td className="px-4 py-2"><input type="number" className={inputCls} value={item.quantity} onChange={e => setFuelLine(i, "quantity", +e.target.value)} /></td>
+                            <td className="px-4 py-2"><input type="number" step="0.01" className={inputCls} value={item.price_per_unit} onChange={e => setFuelLine(i, "price_per_unit", +e.target.value)} /></td>
+                            <td className="px-4 py-2 font-semibold text-foreground">{item.total.toFixed(2)}</td>
+                            <td className="px-4 py-2"><button onClick={() => removeFuelLine(i)} className="text-destructive hover:text-destructive/80"><Trash2 size={14} /></button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button onClick={addFuelLine} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1"><Plus size={12} /> Add a line</button>
+                </div>
+              </Section>
+
+              <Section title="Handling & Totals" icon={<DollarSign size={14} />} accent="text-success" iconBg="bg-success/10"
+                right={<span className="text-sm font-bold text-success">{data.currency || "USD"} {totalCostPreview}</span>}
+              >
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <FormField label="Handling Fee ($)"><input type="number" step="0.01" className={inputCls} value={data.handlingFee || ""} onChange={e => set("handlingFee", +e.target.value)} /></FormField>
                   <FormField label="Civil Aviation ($)"><input type="number" className={readOnlyCls} value={data.civilAviationFee || ""} readOnly /></FormField>
@@ -816,21 +852,24 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
                   <FormField label="HOTAC ($)"><input type="number" className={readOnlyCls} value={data.hotacCharge || ""} readOnly /></FormField>
                   <FormField label="Fuel ($)"><input type="number" className={readOnlyCls} value={data.fuelCharge || ""} readOnly /></FormField>
                   <FormField label="Total Cost ($)">
-                    <input type="number" className={readOnlyCls + " font-bold text-success"} value={
-                      ((data.civilAviationFee || 0) + (data.handlingFee || 0) + (data.airportCharge || 0)
-                      + (data.fuelCharge || 0) + (data.cateringCharge || 0) + (data.hotacCharge || 0)).toFixed(2)
-                    } readOnly />
+                    <input type="number" className={readOnlyCls + " font-bold text-success"} value={totalCostPreview} readOnly />
                   </FormField>
                 </div>
-              </div>
+              </Section>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="bg-card border-t px-6 py-4 flex gap-3 justify-end">
-          <button onClick={onCancel} className="toolbar-btn-outline">Cancel</button>
-          <button onClick={onSave} className="toolbar-btn-primary">Save Report</button>
+        <div className="bg-card border-t px-6 py-3 flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+            <span>Auto-calculated • <strong className="text-foreground">{data.currency || "USD"} {totalCostPreview}</strong> total</span>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={onCancel} className="toolbar-btn-outline">Cancel</button>
+            <button onClick={onSave} className="toolbar-btn-primary">Save Report</button>
+          </div>
         </div>
       </div>
     </div>
