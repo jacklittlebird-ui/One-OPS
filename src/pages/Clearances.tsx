@@ -94,7 +94,11 @@ export default function ClearancesPage() {
     const mt = typeFilter === "all" || c.clearance_type === typeFilter;
     const mstation = stationFilter === "all" || c.authority === stationFilter;
     const mreg = registrationFilter === "all" || c.registration === registrationFilter;
-    return ms && mst && mt && mstation && mreg;
+    const mairline = airlineFilter === "all" || c.airline_id === airlineFilter;
+    const flightDate = c.arrival_date || c.departure_date || "";
+    const mdf = !dateFrom || flightDate >= dateFrom;
+    const mdt = !dateTo || flightDate <= dateTo;
+    return ms && mst && mt && mstation && mreg && mairline && mdf && mdt;
   });
 
   const pendingApproval = data.filter(c => c.status === "Pending" && c.remarks?.includes("Added from Station Dispatch"));
