@@ -737,7 +737,7 @@ function HandlingServiceReportContent() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
             <FileBarChart2 size={22} className="text-primary" /> Service Report
@@ -752,6 +752,7 @@ function HandlingServiceReportContent() {
             <button onClick={() => navigate("/services")} className="text-primary hover:underline">Chart of Services</button>
           </p>
         </div>
+        <button onClick={() => setShowAdd(true)} className="toolbar-btn-primary shrink-0"><Plus size={14} /> New Service Report</button>
       </div>
 
       {/* Summary Stats */}
