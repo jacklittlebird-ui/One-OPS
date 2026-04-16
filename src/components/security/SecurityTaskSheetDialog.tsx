@@ -357,10 +357,10 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                 <tr>
                   {isNew ? (
                     <>
-                      <td className="px-3 py-2 border-r"><input className={inputCls} value={editableRow.flight_no} onChange={e => updateRow("flight_no", e.target.value)} placeholder="Flight No" /></td>
-                      <td className="px-3 py-2 border-r"><input className={inputCls} type="date" value={editableRow.flight_date} onChange={e => updateRow("flight_date", e.target.value)} /></td>
-                      <td className="px-3 py-2 border-r"><input className={inputCls} value={registration || ""} placeholder="Registration" readOnly /></td>
-                      <td className="px-3 py-2"><input className={inputCls} value={route || ""} placeholder="Route" readOnly /></td>
+                       <td className="px-3 py-2 border-r"><input className={inputCls} value={editableRow.flight_no} onChange={e => updateRow("flight_no", e.target.value.toUpperCase())} placeholder="Flight No" /></td>
+                       <td className="px-3 py-2 border-r"><input className={inputCls} type="date" value={editableRow.flight_date} onChange={e => updateRow("flight_date", e.target.value)} /></td>
+                       <td className="px-3 py-2 border-r"><input className={inputCls} value={editableRow.registration || ""} onChange={e => updateRow("registration", e.target.value.toUpperCase())} placeholder="Registration" /></td>
+                       <td className="px-3 py-2"><input className={inputCls} value={editableRow.route || ""} onChange={e => updateRow("route", e.target.value.toUpperCase())} placeholder="e.g. CAI-JFK-CAI" /></td>
                     </>
                   ) : (
                     <>
