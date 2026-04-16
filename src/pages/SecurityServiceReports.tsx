@@ -158,6 +158,13 @@ export default function SecurityServiceReportsPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Build a lookup for flight schedule status by id
+  const flightStatusById = useMemo(() => {
+    const map = new Map<string, string>();
+    securityFlights.forEach((f: any) => map.set(f.id, f.status || "Pending"));
+    return map;
+  }, [securityFlights]);
+
   // Filters
   const allStations = useMemo(() => [...new Set(dispatches.map(d => d.station))].sort(), [dispatches]);
   const allServiceTypes = useMemo(() => [...new Set(dispatches.map(d => d.service_type))].sort(), [dispatches]);
@@ -462,6 +469,7 @@ export default function SecurityServiceReportsPage() {
                             currentStage={derivePipelineStage({
                               isLinked: r.status === "Completed",
                               reviewStatus: r.review_status === "Approved" ? "approved" : r.review_status === "Ready for Billing" ? "ready_for_billing" : r.review_status === "Rejected" ? "rejected" : "pending",
+                              clearanceStatus: r.flight_schedule_id ? flightStatusById.get(r.flight_schedule_id) : undefined,
                             })}
                             compact
                           />

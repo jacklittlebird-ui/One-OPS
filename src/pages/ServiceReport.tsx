@@ -213,6 +213,7 @@ interface MergedRow extends ReportFormData {
   isLinked: boolean;
   flightScheduleId?: string;
   sourceType?: "flight_schedules" | "clearances";
+  clearanceStatus?: string;
 }
 
 interface ScheduleSourceRow {
@@ -227,6 +228,7 @@ interface ScheduleSourceRow {
   station: string;
   arrivalDate: string;
   departureDate: string;
+  clearanceStatus: string;
 }
 
 function resolveStationFromRoute(route: string) {
@@ -327,6 +329,7 @@ function HandlingServiceReportContent() {
   const [newReport, setNewReport] = useState<Partial<ReportFormData>>(emptyReport());
   const [editId, setEditId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<ReportFormData>>({});
+  const [activeClearanceStatus, setActiveClearanceStatus] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: dbReports = [], isLoading: isLoadingReports } = useQuery({
@@ -352,7 +355,7 @@ function HandlingServiceReportContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("flight_schedules")
-        .select("id, flight_no, aircraft_type, route, sta, std, airline_id, handling_agent, arrival_date, departure_date")
+        .select("id, flight_no, aircraft_type, route, sta, std, airline_id, handling_agent, arrival_date, departure_date, status")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -397,6 +400,7 @@ function HandlingServiceReportContent() {
           station: resolveStationFromRoute(c.route || ""),
           arrivalDate: c.arrival_date || "",
           departureDate: c.departure_date || "",
+          clearanceStatus: c.status || "Pending",
         };
       });
   }, [dbFlights, airlineById]);
@@ -424,6 +428,7 @@ function HandlingServiceReportContent() {
             isLinked: true,
             flightScheduleId: source.id,
             sourceType: source.sourceType,
+            clearanceStatus: source.clearanceStatus,
           });
         });
         return;
@@ -449,6 +454,7 @@ function HandlingServiceReportContent() {
         isLinked: false,
         flightScheduleId: source.id,
         sourceType: source.sourceType,
+        clearanceStatus: source.clearanceStatus,
       });
     });
 
@@ -621,7 +627,7 @@ function HandlingServiceReportContent() {
     setNewReport(emptyReport());
   };
 
-  const startEdit = (r: ReportFormData) => { setEditId(r.id!); setEditData({ ...r }); };
+  const startEdit = (r: MergedRow | ReportFormData) => { setEditId(r.id!); setEditData({ ...r }); setActiveClearanceStatus((r as MergedRow).clearanceStatus || ""); };
   const saveEdit = () => {
     if (!editId) return;
     updateMutation.mutate({ ...editData, id: editId } as any);
@@ -868,7 +874,7 @@ function HandlingServiceReportContent() {
                   <td className="px-3 py-2.5 font-semibold text-success">{r.isLinked ? r.totalCost.toLocaleString() : "—"}</td>
                   <td className="px-3 py-2.5">
                     <PipelineStepper
-                      currentStage={derivePipelineStage({ isLinked: !!r.isLinked, reviewStatus: r.reviewStatus })}
+                      currentStage={derivePipelineStage({ isLinked: !!r.isLinked, reviewStatus: r.reviewStatus, clearanceStatus: r.clearanceStatus })}
                       compact
                     />
                   </td>
@@ -888,6 +894,7 @@ function HandlingServiceReportContent() {
                               arrivalDate: r.arrivalDate,
                               departureDate: r.departureDate,
                             });
+                            setActiveClearanceStatus(r.clearanceStatus || "");
                             setShowAdd(true);
                           }}
                           className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
@@ -957,6 +964,7 @@ function HandlingServiceReportContent() {
           onChange={setNewReport}
           onSave={saveNew}
           onCancel={() => setShowAdd(false)}
+          clearanceStatus={activeClearanceStatus}
         />
       )}
       {editId && (
@@ -966,6 +974,7 @@ function HandlingServiceReportContent() {
           onChange={setEditData}
           onSave={saveEdit}
           onCancel={() => setEditId(null)}
+          clearanceStatus={activeClearanceStatus}
         />
       )}
     </div>
