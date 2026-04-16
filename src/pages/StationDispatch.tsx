@@ -383,6 +383,9 @@ export default function StationDispatchPage() {
 
         {/* Dispatch Log */}
         <TabsContent value="dispatches">
+          {viewMode === "calendar" ? (
+            <DispatchCalendarView dispatches={filtered} month={calMonth} onMonthChange={setCalMonth} onEdit={openEdit} />
+          ) : (
           <div className="bg-card rounded-lg border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -430,6 +433,7 @@ export default function StationDispatchPage() {
               </div>
             )}
           </div>
+          )}
         </TabsContent>
 
         {/* Station Flights (assign from here) */}
