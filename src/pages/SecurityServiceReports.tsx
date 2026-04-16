@@ -301,16 +301,32 @@ export default function SecurityServiceReportsPage() {
   const saveEdit = () => {};
 
   const saveTaskSheet = (row: DispatchRow, taskSheet: any) => {
-    updateMutation.mutate({
-      id: row.id,
+    const payload = {
       task_sheet_data: taskSheet,
       notes: taskSheet.remarks || row.notes,
       actual_start: taskSheet.shift_start || row.actual_start,
       actual_end: taskSheet.shift_end || row.actual_end,
       actual_duration_hours: timeDiffHours(taskSheet.shift_start || row.actual_start, taskSheet.shift_end || row.actual_end),
       status: "Completed",
-    } as any);
+      station: row.station,
+      airline: row.airline,
+      flight_no: row.flight_no,
+      flight_date: row.flight_date,
+      service_type: row.service_type,
+      staff_names: row.staff_names,
+      staff_count: row.staff_count,
+      scheduled_start: row.scheduled_start,
+      scheduled_end: row.scheduled_end,
+      dispatched_by: row.dispatched_by,
+    };
+
+    if (isNewReport) {
+      createMutation.mutate(payload as any);
+    } else {
+      updateMutation.mutate({ id: row.id, ...payload } as any);
+    }
     setEditRow(null);
+    setIsNewReport(false);
   };
 
   // Submit for review
