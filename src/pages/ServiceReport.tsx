@@ -248,6 +248,9 @@ function HandlingServiceReportContent() {
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [airlineFilter, setAirlineFilter] = useState("All Airlines");
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [newReport, setNewReport] = useState<Partial<ReportFormData>>(emptyReport());
