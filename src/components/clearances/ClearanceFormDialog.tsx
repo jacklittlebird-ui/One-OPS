@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { CLEARANCE_TYPES, SKD_TYPES } from "./ClearanceTypes";
+import { CLEARANCE_TYPES, SKD_TYPES, SECURITY_CLEARANCE_TYPES, getServiceCategory, getClearanceTypesByCategory, type ServiceCategory } from "./ClearanceTypes";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -88,7 +89,18 @@ function DatePickerField({ label, value, onChange }: { label: string; value: str
 }
 
 export default function ClearanceFormDialog({ open, onOpenChange, form, setForm, airlines, isEdit, onSave }: Props) {
-  const [airlineOpen, setAirlineOpen] = useState(false);
+  const currentCategory = getServiceCategory(form.clearance_type || "Full Handling");
+  const [serviceTab, setServiceTab] = useState<ServiceCategory>(currentCategory);
+
+  const handleCategoryChange = (cat: ServiceCategory) => {
+    setServiceTab(cat);
+    const types = getClearanceTypesByCategory(cat);
+    if (!types.includes(form.clearance_type)) {
+      setForm({ ...form, clearance_type: types[0] });
+    }
+  };
+
+  const availableTypes = getClearanceTypesByCategory(serviceTab);
   const [stationOpen, setStationOpen] = useState(false);
   const { data: airports } = useQuery({
     queryKey: ["airports-iata"],
