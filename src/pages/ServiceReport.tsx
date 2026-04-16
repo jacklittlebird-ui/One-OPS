@@ -355,7 +355,7 @@ function HandlingServiceReportContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("flight_schedules")
-        .select("id, flight_no, aircraft_type, route, sta, std, airline_id, handling_agent, arrival_date, departure_date, status")
+        .select("id, flight_no, aircraft_type, route, sta, std, airline_id, handling_agent, arrival_date, departure_date, status, authority")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -397,7 +397,7 @@ function HandlingServiceReportContent() {
           route: c.route || "",
           sta: c.sta || "",
           std: c.std || "",
-          station: resolveStationFromRoute(c.route || ""),
+          station: resolveStationFromRoute(c.route || "") || c.authority || "CAI",
           arrivalDate: c.arrival_date || "",
           departureDate: c.departure_date || "",
           clearanceStatus: c.status || "Pending",
