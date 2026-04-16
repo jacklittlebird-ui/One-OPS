@@ -132,7 +132,7 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
   };
 
   const handleSave = () => {
-    onSave(row, sheet);
+    onSave(isNew ? editableRow : row, sheet);
   };
 
   const formatDate = (d: string) => {
