@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import PipelineStepper, { derivePipelineStage } from "@/components/serviceReport/PipelineStepper";
 
 interface Props {
   open: boolean;
