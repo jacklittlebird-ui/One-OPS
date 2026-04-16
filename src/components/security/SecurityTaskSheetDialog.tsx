@@ -187,8 +187,8 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
     if (!row) return;
     const v = sheet;
     const flightDate = formatDate(row.flight_date);
-    const reg = editableRow?.registration || registration || "—";
-    const rt = editableRow?.route || route || "—";
+    const reg = v.registration || registration || "—";
+    const rt = v.route || route || "—";
     const staVal = v.sta || sta || "—";
     const stdVal = v.std || std || "—";
     const ataVal = v.ata || ata || "—";
