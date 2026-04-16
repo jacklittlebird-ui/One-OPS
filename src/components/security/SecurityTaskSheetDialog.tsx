@@ -146,10 +146,10 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
 
     const obsSection = (title: string, rows: [string, string][]) => {
       const rowsHtml = rows.map(([label, val]) =>
-        `<tr><td style="border:1px solid #333;padding:4px 8px;width:30px;text-align:center;font-weight:bold;background:#f5f5f5;">${label}</td><td style="border:1px solid #333;padding:4px 8px;">${val || ""}</td></tr>`
+        `<tr><td class="obs-label">${label}</td><td class="obs-val">${val || ""}</td></tr>`
       ).join("");
       return `<table style="width:100%;border-collapse:collapse;margin-bottom:0;">
-        <tr><td colspan="2" style="border:1px solid #333;padding:5px 8px;font-weight:bold;background:#d0d8e8;font-size:11px;">${title}</td></tr>
+        <tr><td colspan="2" class="obs-title">${title}</td></tr>
         ${rowsHtml}</table>`;
     };
 
