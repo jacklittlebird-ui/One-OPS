@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import * as XLSX from "xlsx";
 import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Search, Pencil, Trash2, ShieldCheck, Clock, CheckCircle2, XCircle, AlertTriangle, Download, Eye, Users, Upload } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ShieldCheck, Clock, CheckCircle2, XCircle, AlertTriangle, Download, Eye, Users, Upload, CalendarDays, TableIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { exportToExcel } from "@/lib/exportExcel";
 import { formatDateDMY } from "@/lib/utils";
@@ -18,6 +18,93 @@ import { ClearanceRow, CLEARANCE_TYPES, STATUS_CONFIG, emptyForm } from "@/compo
 import ClearanceFormDialog from "@/components/clearances/ClearanceFormDialog";
 import ClearanceDetailDialog from "@/components/clearances/ClearanceDetailDialog";
 import ScheduleUploadDialog from "@/components/clearances/ScheduleUploadDialog";
+
+// ─── Calendar View Component ───
+function CalendarView({ flights, month, onMonthChange, airlineMap, onView, onEdit }: {
+  flights: ClearanceRow[];
+  month: Date;
+  onMonthChange: (d: Date) => void;
+  airlineMap: Record<string, any>;
+  onView: (c: ClearanceRow) => void;
+  onEdit: (c: ClearanceRow) => void;
+}) {
+  const year = month.getFullYear();
+  const mo = month.getMonth();
+  const firstDay = new Date(year, mo, 1).getDay();
+  const daysInMonth = new Date(year, mo + 1, 0).getDate();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const byDate = useMemo(() => {
+    const map: Record<string, ClearanceRow[]> = {};
+    flights.forEach(f => {
+      const d = f.arrival_date || f.departure_date || "";
+      if (d) {
+        if (!map[d]) map[d] = [];
+        map[d].push(f);
+      }
+    });
+    return map;
+  }, [flights]);
+
+  const prev = () => onMonthChange(new Date(year, mo - 1, 1));
+  const next = () => onMonthChange(new Date(year, mo + 1, 1));
+  const monthLabel = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const statusColor = (s: string) =>
+    s === "Approved" ? "bg-success/20 text-success border-success/30" :
+    s === "Pending" ? "bg-warning/20 text-warning border-warning/30" :
+    s === "Rejected" ? "bg-destructive/20 text-destructive border-destructive/30" :
+    "bg-muted text-muted-foreground border-muted";
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={prev}><ChevronLeft size={16} /></Button>
+          <h3 className="text-sm font-semibold">{monthLabel}</h3>
+          <Button variant="ghost" size="sm" onClick={next}><ChevronRight size={16} /></Button>
+        </div>
+        <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+            <div key={d} className="bg-muted/50 text-center text-xs font-semibold text-muted-foreground py-2">{d}</div>
+          ))}
+          {cells.map((day, i) => {
+            if (day === null) return <div key={`e${i}`} className="bg-card min-h-[90px]" />;
+            const dateStr = `${year}-${String(mo + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const dayFlights = byDate[dateStr] || [];
+            const isToday = dateStr === today;
+            return (
+              <div key={dateStr} className={`bg-card min-h-[90px] p-1 ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}>
+                <div className={`text-xs font-medium mb-0.5 ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>{day}</div>
+                <div className="space-y-0.5 max-h-[70px] overflow-y-auto">
+                  {dayFlights.slice(0, 4).map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => onView(f)}
+                      className={`w-full text-left px-1 py-0.5 rounded text-[10px] leading-tight truncate border ${statusColor(f.status)} hover:opacity-80 transition-opacity`}
+                      title={`${f.flight_no} ${f.route} (${f.status})`}
+                    >
+                      <span className="font-mono font-semibold">{f.flight_no}</span>
+                      {f.sta && <span className="ml-1 opacity-70">{f.sta}</span>}
+                    </button>
+                  ))}
+                  {dayFlights.length > 4 && (
+                    <div className="text-[10px] text-muted-foreground text-center">+{dayFlights.length - 4} more</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ClearancesPage() {
   const { data, isLoading, refetch, add, update, remove } = useSupabaseTable<ClearanceRow>("flight_schedules");
@@ -28,6 +115,11 @@ export default function ClearancesPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [stationFilter, setStationFilter] = useState("all");
   const [registrationFilter, setRegistrationFilter] = useState("all");
+  const [airlineFilter, setAirlineFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [uploadOpen, setUploadOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<ClearanceRow | null>(null);
@@ -89,7 +181,11 @@ export default function ClearancesPage() {
     const mt = typeFilter === "all" || c.clearance_type === typeFilter;
     const mstation = stationFilter === "all" || c.authority === stationFilter;
     const mreg = registrationFilter === "all" || c.registration === registrationFilter;
-    return ms && mst && mt && mstation && mreg;
+    const mairline = airlineFilter === "all" || c.airline_id === airlineFilter;
+    const flightDate = c.arrival_date || c.departure_date || "";
+    const mdf = !dateFrom || flightDate >= dateFrom;
+    const mdt = !dateTo || flightDate <= dateTo;
+    return ms && mst && mt && mstation && mreg && mairline && mdf && mdt;
   });
 
   const pendingApproval = data.filter(c => c.status === "Pending" && c.remarks?.includes("Added from Station Dispatch"));
@@ -294,8 +390,17 @@ export default function ClearancesPage() {
         </TabsList>
 
         <TabsContent value="all">
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
-            <div className="relative flex-1"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} /><Input placeholder="Search flights…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="relative flex-1 min-w-[180px]"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} /><Input placeholder="Search flights…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} /></div>
+            <Select value={airlineFilter} onValueChange={setAirlineFilter}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Airlines" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Airlines</SelectItem>
+                {(airlines || []).slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).map((a: any) => (
+                  <SelectItem key={a.id} value={a.id}>{a.code ? `${a.code} – ${a.name}` : a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="all">All Types</SelectItem>{CLEARANCE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -316,61 +421,84 @@ export default function ClearancesPage() {
                 <SelectContent><SelectItem value="all">All Registrations</SelectItem>{registrations.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
             )}
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">From</label>
+              <Input type="date" className="w-36 h-9" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">To</label>
+              <Input type="date" className="w-36 h-9" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            </div>
+            <div className="flex border rounded-lg overflow-hidden ml-auto">
+              <Button variant={viewMode === "table" ? "default" : "ghost"} size="sm" className="rounded-none h-9 px-3" onClick={() => setViewMode("table")}><TableIcon size={14} className="mr-1" /> Table</Button>
+              <Button variant={viewMode === "calendar" ? "default" : "ghost"} size="sm" className="rounded-none h-9 px-3" onClick={() => setViewMode("calendar")}><CalendarDays size={14} className="mr-1" /> Calendar</Button>
+            </div>
           </div>
 
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Arrival Date</TableHead>
-                    <TableHead>Departure Date</TableHead>
-                    <TableHead>Flight</TableHead>
-                    <TableHead>Reg No</TableHead>
-                    <TableHead>A/C Type</TableHead>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Station</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>STA</TableHead>
-                    <TableHead>STD</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(c => {
-                    const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.Pending;
-                    const statusIcon = c.status === "Pending" ? <Clock size={12} /> : c.status === "Approved" ? <CheckCircle2 size={12} /> : c.status === "Rejected" ? <XCircle size={12} /> : <AlertTriangle size={12} />;
-                    return (
-                      <TableRow key={c.id}>
-                        <TableCell className="text-xs">{formatDateDMY(c.arrival_date)}</TableCell>
-                        <TableCell className="text-xs">{formatDateDMY(c.departure_date)}</TableCell>
-                        <TableCell className="font-medium font-mono">{c.flight_no}</TableCell>
-                        <TableCell className="text-xs font-mono">{c.registration || "—"}</TableCell>
-                        <TableCell className="text-xs">{c.aircraft_type || "—"}</TableCell>
-                        <TableCell>{c.airline_id ? (airlineMap[c.airline_id]?.code || "—") : "—"}</TableCell>
-                        <TableCell className="text-xs">{c.authority || "—"}</TableCell>
-                        <TableCell className="text-sm font-mono">{c.route || "—"}</TableCell>
-                        <TableCell className="text-xs">{c.sta || "—"}</TableCell>
-                        <TableCell className="text-xs">{c.std || "—"}</TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>{statusIcon}{c.status}</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => setDetailItem(c)}><Eye size={14} /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil size={14} /></Button>
-                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(c.id)}><Trash2 size={14} /></Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {filtered.length === 0 && <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No flight schedules found</TableCell></TableRow>}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          {viewMode === "table" ? (
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Arrival Date</TableHead>
+                      <TableHead>Departure Date</TableHead>
+                      <TableHead>Flight</TableHead>
+                      <TableHead>Reg No</TableHead>
+                      <TableHead>A/C Type</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Station</TableHead>
+                      <TableHead>Route</TableHead>
+                      <TableHead>STA</TableHead>
+                      <TableHead>STD</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-24">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map(c => {
+                      const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.Pending;
+                      const statusIcon = c.status === "Pending" ? <Clock size={12} /> : c.status === "Approved" ? <CheckCircle2 size={12} /> : c.status === "Rejected" ? <XCircle size={12} /> : <AlertTriangle size={12} />;
+                      return (
+                        <TableRow key={c.id}>
+                          <TableCell className="text-xs">{formatDateDMY(c.arrival_date)}</TableCell>
+                          <TableCell className="text-xs">{formatDateDMY(c.departure_date)}</TableCell>
+                          <TableCell className="font-medium font-mono">{c.flight_no}</TableCell>
+                          <TableCell className="text-xs font-mono">{c.registration || "—"}</TableCell>
+                          <TableCell className="text-xs">{c.aircraft_type || "—"}</TableCell>
+                          <TableCell>{c.airline_id ? (airlineMap[c.airline_id]?.code || "—") : "—"}</TableCell>
+                          <TableCell className="text-xs">{c.authority || "—"}</TableCell>
+                          <TableCell className="text-sm font-mono">{c.route || "—"}</TableCell>
+                          <TableCell className="text-xs">{c.sta || "—"}</TableCell>
+                          <TableCell className="text-xs">{c.std || "—"}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>{statusIcon}{c.status}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button size="icon" variant="ghost" onClick={() => setDetailItem(c)}><Eye size={14} /></Button>
+                              <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil size={14} /></Button>
+                              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(c.id)}><Trash2 size={14} /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filtered.length === 0 && <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No flight schedules found</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ) : (
+            <CalendarView
+              flights={filtered}
+              month={calMonth}
+              onMonthChange={setCalMonth}
+              airlineMap={airlineMap}
+              onView={setDetailItem}
+              onEdit={openEdit}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="pending-approval">
