@@ -359,12 +359,33 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
 
   return (
     <Dialog open={!!row} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0">
-        {/* Title bar styled like the PDF header */}
-        <div className="bg-primary/5 border-b px-6 py-4">
-          <DialogTitle className="text-center text-lg font-bold uppercase tracking-wide text-foreground">
-            {isNew ? "NEW" : currentRow.airline} AIRLINES SECURITY TASK SHEET
-          </DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+        {/* Gradient hero header */}
+        <div className="relative bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground px-6 py-5 overflow-hidden">
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+          <div className="relative flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-bold uppercase tracking-wide leading-tight">
+                    {isNew ? "New" : currentRow.airline} Airlines Security Task Sheet
+                  </DialogTitle>
+                  <p className="text-[11px] uppercase tracking-widest opacity-80 mt-0.5">
+                    {isNew ? "Create new report" : "Edit report"} • {currentRow.station || "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Chip icon={<Plane size={13} />} label="Flight" value={currentRow.flight_no || "—"} />
+                <Chip icon={<Clock size={13} />} label="Date" value={formatDate(currentRow.flight_date)} />
+                <Chip label="Reg" value={sheet.registration || registration || "—"} />
+                <Chip label="Service" value={serviceType || currentRow.service_type || "—"} />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Pipeline stepper - hidden in print/download */}
