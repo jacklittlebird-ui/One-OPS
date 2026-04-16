@@ -435,6 +435,8 @@ function HandlingServiceReportContent() {
             flightScheduleId: source.id,
             sourceType: source.sourceType,
             clearanceStatus: source.clearanceStatus,
+            skdType: source.skdType,
+            serviceType: source.serviceType,
           });
         });
         return;
@@ -461,6 +463,8 @@ function HandlingServiceReportContent() {
         flightScheduleId: source.id,
         sourceType: source.sourceType,
         clearanceStatus: source.clearanceStatus,
+        skdType: source.skdType,
+        serviceType: source.serviceType,
       });
     });
 
