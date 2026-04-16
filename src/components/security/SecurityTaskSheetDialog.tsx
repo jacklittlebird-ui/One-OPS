@@ -101,17 +101,21 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
     if (row) {
       const saved = row.task_sheet_data as Record<string, any> | null;
       if (saved && typeof saved === "object") {
-        setSheet({ ...emptyTaskSheet(), ...saved } as TaskSheetData);
+        const restored = { ...emptyTaskSheet(), ...saved } as TaskSheetData;
+        // If skdType from flight schedule and not already saved, use it
+        if (!restored.flight_type && skdType) restored.flight_type = skdType;
+        setSheet(restored);
       } else {
         setSheet({
           ...emptyTaskSheet(),
+          flight_type: skdType || "",
           shift_start: row.actual_start || row.scheduled_start || "",
           shift_end: row.actual_end || row.scheduled_end || "",
           remarks: row.notes || "",
         });
       }
     }
-  }, [row]);
+  }, [row, skdType]);
 
   if (!row) return null;
 
