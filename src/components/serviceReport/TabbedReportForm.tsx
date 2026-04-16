@@ -49,6 +49,28 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+function Section({ title, icon, accent = "text-primary", iconBg = "bg-primary/10", children, right }: {
+  title: string;
+  icon?: React.ReactNode;
+  accent?: string;
+  iconBg?: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b bg-muted/30">
+        <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${accent}`}>
+          {icon && <span className={`h-6 w-6 rounded-md ${iconBg} ${accent} flex items-center justify-center`}>{icon}</span>}
+          {title}
+        </h3>
+        {right}
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
 /** Convert ISO string (yyyy-mm-dd) to Date or undefined */
 function toDate(val: string | null | undefined): Date | undefined {
   if (!val) return undefined;
