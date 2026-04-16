@@ -158,6 +158,13 @@ export default function SecurityServiceReportsPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Build a lookup for flight schedule status by id
+  const flightStatusById = useMemo(() => {
+    const map = new Map<string, string>();
+    securityFlights.forEach((f: any) => map.set(f.id, f.status || "Pending"));
+    return map;
+  }, [securityFlights]);
+
   // Filters
   const allStations = useMemo(() => [...new Set(dispatches.map(d => d.station))].sort(), [dispatches]);
   const allServiceTypes = useMemo(() => [...new Set(dispatches.map(d => d.service_type))].sort(), [dispatches]);
