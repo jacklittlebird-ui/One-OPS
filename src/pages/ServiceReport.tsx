@@ -512,6 +512,7 @@ function HandlingServiceReportContent() {
 
   const allStations = useMemo(() => [...new Set(mergedRows.filter(r => r.station).map(r => r.station))], [mergedRows]);
   const allHandlingTypes = useMemo(() => [...new Set(mergedRows.filter(r => r.handlingType).map(r => r.handlingType))], [mergedRows]);
+  const allOperators = useMemo(() => [...new Set(mergedRows.filter(r => r.operator).map(r => r.operator))].sort(), [mergedRows]);
 
   const filtered = useMemo(() => {
     let r = mergedRows;
