@@ -398,12 +398,10 @@ export default function SecurityServiceReportsPage() {
           <Shield size={22} className="text-primary" /> Security Service Reports
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Post-service documentation from dispatch assignments · Pipeline:{" "}
+          Security service documentation · Pipeline:{" "}
           <button onClick={() => navigate("/clearances")} className="text-primary hover:underline">Schedule</button>
           {" → "}
-          <button onClick={() => navigate("/station-dispatch")} className="text-primary hover:underline">Dispatch</button>
-          {" → "}
-          <span className="font-semibold text-foreground">Service Reports</span>
+          <span className="font-semibold text-foreground">Security Service</span>
           {" → "}
           <button onClick={() => navigate("/invoices")} className="text-primary hover:underline">Finance</button>
         </p>
