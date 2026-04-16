@@ -393,10 +393,8 @@ export default function ClearancesPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}><Download size={14} className="mr-1" /> Export</Button>
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}><Upload size={14} className="mr-1" /> Upload Excel</Button>
           <Button variant="outline" size="sm" onClick={() => setUploadOpen(true)}><Upload size={14} className="mr-1" /> Import Schedule</Button>
           <Button size="sm" onClick={openAdd}><Plus size={14} className="mr-1" /> Add Flights</Button>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleUpload} />
         </div>
       </div>
 
