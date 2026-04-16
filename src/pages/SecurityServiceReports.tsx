@@ -611,11 +611,14 @@ export default function SecurityServiceReportsPage() {
                         <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
                           {r.actual_start && r.actual_end ? `${r.actual_start}–${r.actual_end}` : "—"}
                         </td>
-                        <td className="px-3 py-2.5 text-foreground">{r.actual_duration_hours ? `${r.actual_duration_hours}h` : "—"}</td>
+                        <td className="px-3 py-2.5 text-foreground">{r.actual_start && r.actual_end ? `${timeDiffHours(r.actual_start, r.actual_end)}h` : (r.actual_duration_hours ? `${r.actual_duration_hours}h` : "—")}</td>
                         <td className="px-3 py-2.5">
-                          {r.overtime_hours > 0 ? (
-                            <span className="text-warning font-semibold">{r.overtime_hours}h</span>
-                          ) : "—"}
+                          {(() => {
+                            const overtimeDisplay = r.actual_start && r.actual_end
+                              ? minutesToHMM(Math.max(0, timeDiffMinutes(r.actual_start, r.actual_end) - Math.round((r.contract_duration_hours || 0) * 60)))
+                              : r.overtime_hours;
+                            return overtimeDisplay > 0 ? <span className="text-warning font-semibold">{overtimeDisplay}h</span> : "—";
+                          })()}
                         </td>
                         <td className="px-3 py-2.5 font-semibold text-success">{r.total_charge > 0 ? `$${r.total_charge.toLocaleString()}` : "—"}</td>
                         <td className="px-3 py-2.5">
