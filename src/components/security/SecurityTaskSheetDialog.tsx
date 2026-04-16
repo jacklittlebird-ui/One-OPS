@@ -308,19 +308,10 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                   <td className="px-3 py-2 text-foreground border-r w-20 font-mono">{sta || "—"}</td>
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">ATA</td>
                   <td className="px-3 py-2 text-foreground border-r w-20 font-mono">{ata || row.actual_start || "—"}</td>
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-24">Skd Type</td>
-                  <td className="px-3 py-2">
-                    <select
-                      value={sheet.flight_type}
-                      onChange={e => update("flight_type", e.target.value)}
-                      className="text-xs border border-border rounded px-2 py-1 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="">— Select —</option>
-                      {FLIGHT_TYPES.map(ft => (
-                        <option key={ft} value={ft}>{ft}</option>
-                      ))}
-                    </select>
-                  </td>
+                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-24">Skd Type</td>
+                   <td className="px-3 py-2">
+                     <span className="text-xs font-semibold text-foreground">{skdType || sheet.flight_type || "—"}</span>
+                   </td>
                 </tr>
                 <tr className="border-b">
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">STD</td>
