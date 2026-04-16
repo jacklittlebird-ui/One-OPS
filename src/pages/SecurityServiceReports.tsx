@@ -469,6 +469,7 @@ export default function SecurityServiceReportsPage() {
                             currentStage={derivePipelineStage({
                               isLinked: r.status === "Completed",
                               reviewStatus: r.review_status === "Approved" ? "approved" : r.review_status === "Ready for Billing" ? "ready_for_billing" : r.review_status === "Rejected" ? "rejected" : "pending",
+                              clearanceStatus: r.flight_schedule_id ? flightStatusById.get(r.flight_schedule_id) : undefined,
                             })}
                             compact
                           />
