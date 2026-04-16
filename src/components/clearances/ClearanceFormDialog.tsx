@@ -101,6 +101,7 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
   };
 
   const availableTypes = getClearanceTypesByCategory(serviceTab);
+  const [airlineOpen, setAirlineOpen] = useState(false);
   const [stationOpen, setStationOpen] = useState(false);
   const { data: airports } = useQuery({
     queryKey: ["airports-iata"],
