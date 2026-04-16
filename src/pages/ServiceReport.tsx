@@ -236,6 +236,77 @@ function resolveStationFromRoute(route: string) {
   return "";
 }
 
+// ─── Service Report Calendar View ───
+function ServiceReportCalendarView({ reports, month, onMonthChange, onEdit }: {
+  reports: any[];
+  month: Date;
+  onMonthChange: (d: Date) => void;
+  onEdit: (r: any) => void;
+}) {
+  const year = month.getFullYear();
+  const mo = month.getMonth();
+  const firstDay = new Date(year, mo, 1).getDay();
+  const daysInMonth = new Date(year, mo + 1, 0).getDate();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const byDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    reports.forEach(r => {
+      const d = r.arrivalDate || r.departureDate || "";
+      if (d) { if (!map[d]) map[d] = []; map[d].push(r); }
+    });
+    return map;
+  }, [reports]);
+
+  const prev = () => onMonthChange(new Date(year, mo - 1, 1));
+  const next = () => onMonthChange(new Date(year, mo + 1, 1));
+  const monthLabel = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const sc = (r: any) => r.isLinked ? "bg-success/20 text-success border-success/30" : "bg-muted/60 text-muted-foreground border-muted";
+
+  return (
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={prev} className="p-1.5 rounded hover:bg-muted"><ChevronLeft size={16} /></button>
+        <h3 className="text-sm font-semibold">{monthLabel}</h3>
+        <button onClick={next} className="p-1.5 rounded hover:bg-muted"><ChevronRight size={16} /></button>
+      </div>
+      <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
+        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
+          <div key={d} className="bg-muted/50 text-center text-xs font-semibold text-muted-foreground py-2">{d}</div>
+        ))}
+        {cells.map((day, i) => {
+          if (day === null) return <div key={`e${i}`} className="bg-card min-h-[90px]" />;
+          const dateStr = `${year}-${String(mo+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+          const dayReports = byDate[dateStr] || [];
+          const isToday = dateStr === today;
+          return (
+            <div key={dateStr} className={`bg-card min-h-[90px] p-1 ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}>
+              <div className={`text-xs font-medium mb-0.5 ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>{day}</div>
+              <div className="space-y-0.5 max-h-[70px] overflow-y-auto">
+                {dayReports.slice(0,4).map((r: any, j: number) => (
+                  <button key={r.id || j} onClick={() => r.isLinked && onEdit(r)}
+                    className={`w-full text-left px-1 py-0.5 rounded text-[10px] leading-tight truncate border ${sc(r)} hover:opacity-80 transition-opacity`}
+                    title={`${r.flightNo} – ${r.operator}`}>
+                    <span className="font-mono font-semibold">{r.flightNo}</span>
+                    <span className="ml-1 opacity-70">{r.operator?.slice(0,8)}</span>
+                  </button>
+                ))}
+                {dayReports.length > 4 && <div className="text-[10px] text-muted-foreground text-center">+{dayReports.length-4} more</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function HandlingServiceReportContent() {
   const navigate = useNavigate();
   const location = useLocation();
