@@ -21,21 +21,27 @@ export function derivePipelineStage(opts: {
   isLinked: boolean;
   reviewStatus: string;
   clearanceStatus?: string;
+  dispatchStatus?: string;
 }): PipelineStage {
   const rs = opts.reviewStatus?.toLowerCase() || "";
+  const ds = opts.dispatchStatus?.toLowerCase() || "";
 
   // New reports start at clearance for approval
-  // "pending" / "Pending Review" → clearance (step 1)
   if (rs === "pending" || rs === "pending review" || rs === "draft") return "clearance";
-
-  // After clearance approval → operations (step 2)
-  if (rs === "approved") return "operations";
 
   // Rejected → back to clearance
   if (rs === "rejected") return "clearance";
 
   // Ready for billing → receivables (step 4)
   if (rs === "ready_for_billing" || rs === "ready for billing") return "receivables";
+
+  // After clearance approval:
+  // If station has completed their work (status=Completed) → operations (step 3, steps 1-2 done)
+  // Otherwise → station (step 2, step 1 done)
+  if (rs === "approved") {
+    if (ds === "completed") return "operations";
+    return "station";
+  }
 
   // Fallback
   return "station";
