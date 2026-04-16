@@ -16,10 +16,14 @@ function formatTimeInput(value: string, prevValue: string): string {
 }
 
 interface TaskSheetData {
-  flight_type: string; // SKD Type value
+  flight_type: string;
   delay: string;
   shift_start: string;
   shift_end: string;
+  sta: string;
+  std: string;
+  ata: string;
+  atd: string;
   cargo_observer_1: string;
   cargo_observer_2: string;
   hold_baggage_observer_1: string;
@@ -40,6 +44,10 @@ const emptyTaskSheet = (): TaskSheetData => ({
   delay: "",
   shift_start: "",
   shift_end: "",
+  sta: "",
+  std: "",
+  ata: "",
+  atd: "",
   cargo_observer_1: "",
   cargo_observer_2: "",
   hold_baggage_observer_1: "",
