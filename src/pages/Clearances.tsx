@@ -28,6 +28,11 @@ export default function ClearancesPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [stationFilter, setStationFilter] = useState("all");
   const [registrationFilter, setRegistrationFilter] = useState("all");
+  const [airlineFilter, setAirlineFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [uploadOpen, setUploadOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<ClearanceRow | null>(null);
