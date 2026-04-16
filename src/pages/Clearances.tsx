@@ -548,7 +548,7 @@ export default function ClearancesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingApproval.map(c => (
+                  {pendingApproval.filter(c => getServiceCategory(c.clearance_type) === serviceCategory).map(c => (
                     <TableRow key={c.id}>
                       <TableCell className="text-xs">{formatDateDMY(c.arrival_date || c.departure_date)}</TableCell>
                       <TableCell className="font-medium font-mono">{c.flight_no}</TableCell>
@@ -576,7 +576,7 @@ export default function ClearancesPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {pendingApproval.length === 0 && (
+                  {pendingApproval.filter(c => getServiceCategory(c.clearance_type) === serviceCategory).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No flights pending approval</TableCell>
                     </TableRow>
@@ -585,6 +585,8 @@ export default function ClearancesPage() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+      </Tabs>
         </TabsContent>
       </Tabs>
 
