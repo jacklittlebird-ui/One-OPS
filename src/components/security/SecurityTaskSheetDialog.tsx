@@ -592,8 +592,8 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-between items-center gap-2 px-6 pb-4">
+        {/* Sticky action bar */}
+        <div className="sticky bottom-0 flex flex-wrap justify-between items-center gap-2 px-6 py-3 border-t bg-card/95 backdrop-blur-sm">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer size={14} className="mr-1" /> Print
@@ -604,7 +604,9 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave}>Save Task Sheet</Button>
+            <Button onClick={handleSave} className="shadow-sm">
+              <Shield size={14} className="mr-1" /> Save Task Sheet
+            </Button>
           </div>
         </div>
       </DialogContent>
@@ -613,22 +615,20 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
 }
 
 function ObserverSection({ title, fields }: { title: string; fields: { label: string; value: string; onChange: (v: string) => void }[] }) {
-  const inputCls = "text-sm border border-border rounded px-2.5 py-2 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground w-full";
+  const inputCls = "text-sm border border-border rounded-md px-2.5 py-1.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-muted-foreground w-full transition-colors";
   return (
-    <div className="border rounded overflow-hidden">
-      <div className="bg-primary/10 text-primary font-bold text-sm px-3 py-2 border-b border-primary/20">{title}</div>
-      <table className="w-full text-sm">
-        <tbody>
-          {fields.map(f => (
-            <tr key={f.label} className="border-b last:border-0">
-              <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-10 text-center">{f.label}</td>
-              <td className="px-3 py-2">
-                <input className={inputCls} value={f.value} onChange={e => f.onChange(e.target.value)} placeholder="Name or NIL" />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="border rounded-lg overflow-hidden bg-card">
+      <div className="bg-success/10 text-success font-semibold text-xs uppercase tracking-wider px-3 py-2 border-b border-success/20 flex items-center gap-1.5">
+        <Eye size={12} /> {title}
+      </div>
+      <div className="p-2 space-y-1.5">
+        {fields.map(f => (
+          <div key={f.label} className="flex items-center gap-2">
+            <span className="h-7 w-7 rounded-md bg-muted text-foreground text-xs font-bold flex items-center justify-center shrink-0">{f.label}</span>
+            <input className={inputCls} value={f.value} onChange={e => f.onChange(e.target.value)} placeholder="Name or NIL" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
