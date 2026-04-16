@@ -287,7 +287,7 @@ export default function StationDispatchPage() {
 
     setFormData({
       flight_schedule_id: flight.id,
-      station: stationFilter,
+      station: stationFilter || "CAI",
       airline: airlineName,
       flight_no: flight.flight_no,
       flight_date: dateFrom,
