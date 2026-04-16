@@ -72,14 +72,25 @@ interface DispatchRow {
   task_sheet_data?: any;
 }
 
-function timeDiffHours(start: string, end: string): number {
+function timeDiffMinutes(start: string, end: string): number {
   if (!start || !end) return 0;
   const [h1, m1] = start.split(":").map(Number);
   const [h2, m2] = end.split(":").map(Number);
   if ([h1, m1, h2, m2].some(isNaN)) return 0;
   let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
   if (diff < 0) diff += 24 * 60;
-  return +(diff / 60).toFixed(2);
+  return diff;
+}
+
+function minutesToHMM(mins: number): number {
+  if (!mins || mins < 0) return 0;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return Math.round((h + m / 100) * 100) / 100;
+}
+
+function timeDiffHours(start: string, end: string): number {
+  return minutesToHMM(timeDiffMinutes(start, end));
 }
 
 export default function SecurityServiceReportsPage() {
