@@ -388,7 +388,6 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
             if (!form.std) missing.push("STD (24h)");
             if (!form.clearance_type) missing.push("Service Type");
             if (missing.length > 0) {
-              const { toast } = require("@/hooks/use-toast");
               toast({ title: "Missing Required Fields", description: missing.join(", "), variant: "destructive" });
               return;
             }
