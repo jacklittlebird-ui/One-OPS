@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SECURITY_CLEARANCE_TYPES } from "@/components/clearances/ClearanceTypes";
+import SecurityTaskSheetDialog from "@/components/security/SecurityTaskSheetDialog";
 
 const PAGE_SIZE = 15;
 
