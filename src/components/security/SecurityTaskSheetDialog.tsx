@@ -381,15 +381,15 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                     <>
                        <td className="px-3 py-2 border-r"><input className={inputCls} value={editableRow.flight_no} onChange={e => updateRow("flight_no", e.target.value.toUpperCase())} placeholder="Flight No" /></td>
                        <td className="px-3 py-2 border-r"><input className={inputCls} type="date" value={editableRow.flight_date} onChange={e => updateRow("flight_date", e.target.value)} /></td>
-                       <td className="px-3 py-2 border-r"><input className={inputCls} value={editableRow.registration || ""} onChange={e => updateRow("registration", e.target.value.toUpperCase())} placeholder="Registration" /></td>
-                       <td className="px-3 py-2"><input className={inputCls} value={editableRow.route || ""} onChange={e => updateRow("route", e.target.value.toUpperCase())} placeholder="e.g. CAI-JFK-CAI" /></td>
+                       <td className="px-3 py-2 border-r"><input className={inputCls} value={sheet.registration} onChange={e => update("registration", e.target.value.toUpperCase())} placeholder="Registration" /></td>
+                       <td className="px-3 py-2"><input className={inputCls} value={sheet.route} onChange={e => update("route", e.target.value.toUpperCase())} placeholder="e.g. CAI-JFK-CAI" /></td>
                     </>
                   ) : (
                     <>
                       <td className="px-3 py-2 font-bold text-foreground border-r">{currentRow.flight_no}</td>
                       <td className="px-3 py-2 text-foreground border-r">{formatDate(currentRow.flight_date)}</td>
-                      <td className="px-3 py-2 font-mono text-foreground border-r">{registration || "—"}</td>
-                      <td className="px-3 py-2 text-foreground">{route || "—"}</td>
+                      <td className="px-3 py-2 font-mono text-foreground border-r">{sheet.registration || registration || "—"}</td>
+                      <td className="px-3 py-2 text-foreground">{sheet.route || route || "—"}</td>
                     </>
                   )}
                 </tr>
