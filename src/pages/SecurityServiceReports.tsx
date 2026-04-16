@@ -692,7 +692,7 @@ export default function SecurityServiceReportsPage() {
       {/* Security Task Sheet Dialog */}
       <SecurityTaskSheetDialog
         row={editRow}
-        onClose={() => setEditRow(null)}
+        onClose={() => { setEditRow(null); setIsNewReport(false); }}
         onSave={saveTaskSheet}
         registration={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.registration : undefined}
         route={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.route : undefined}
