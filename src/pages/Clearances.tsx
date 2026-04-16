@@ -323,14 +323,23 @@ export default function ClearancesPage() {
     } else {
       const flightDates = expandFlightDates();
       if (flightDates && flightDates.length > 0) {
-        let count = 0;
-        for (const fDate of flightDates) {
-          await add(buildPayload({ arrival_date: fDate, departure_date: fDate, no_of_flights: 1 }));
-          count++;
+        const records = flightDates.map(fDate => buildPayload({ arrival_date: fDate, departure_date: fDate, no_of_flights: 1 }));
+        const { error: insertError } = await supabase.from("flight_schedules").insert(records);
+        if (insertError) {
+          const isDuplicate = insertError.message?.includes("idx_flight_schedules_no_duplicates") || insertError.code === "23505";
+          toast({ title: "Error", description: isDuplicate ? "Duplicate flight detected: a flight with the same number, route, date, and service type already exists." : insertError.message, variant: "destructive" });
+          return;
         }
-        toast({ title: "✅ Created", description: `${count} individual flight records created.` });
+        await refetch();
+        toast({ title: "✅ Created", description: `${records.length} individual flight records created.` });
       } else {
-        await add(buildPayload());
+        const { error: insertError } = await supabase.from("flight_schedules").insert(buildPayload());
+        if (insertError) {
+          const isDuplicate = insertError.message?.includes("idx_flight_schedules_no_duplicates") || insertError.code === "23505";
+          toast({ title: "Error", description: isDuplicate ? "Duplicate flight detected: a flight with the same number, route, date, and service type already exists." : insertError.message, variant: "destructive" });
+          return;
+        }
+        await refetch();
       }
     }
     setDialogOpen(false);
