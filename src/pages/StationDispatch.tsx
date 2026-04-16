@@ -567,7 +567,10 @@ export default function StationDispatchPage() {
                 <div><label className="text-xs font-semibold text-muted-foreground">Flight No</label>
                   <input className={inputCls} value={formData.flight_no || ""} onChange={e => updateFormField("flight_no", e.target.value)} /></div>
                 <div><label className="text-xs font-semibold text-muted-foreground">Airline</label>
-                  <input className={inputCls} value={formData.airline || ""} onChange={e => updateFormField("airline", e.target.value)} /></div>
+                  <select className={selectCls} value={formData.airline || ""} onChange={e => updateFormField("airline", e.target.value)}>
+                    <option value="">Select Airline</option>
+                    {[...airlines].sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.name}>{a.iata_code ? `${a.iata_code} — ` : ""}{a.name}</option>)}
+                  </select></div>
                 <div><label className="text-xs font-semibold text-muted-foreground">Service Type</label>
                   <select className={selectCls} value={formData.service_type || "Arrival"} onChange={e => updateFormField("service_type", e.target.value)}>
                     {SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}
