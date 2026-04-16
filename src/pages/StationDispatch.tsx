@@ -7,6 +7,7 @@ import { useSupabaseTable } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SECURITY_CLEARANCE_TYPES, getServiceCategory, type ServiceCategory } from "@/components/clearances/ClearanceTypes";
 
 type FlightRow = {
   id: string;
@@ -81,7 +82,9 @@ const STATIONS = [
 ];
 
 const DISPATCH_STATUSES = ["Pending", "Dispatched", "In Progress", "Completed", "Cancelled"];
-const SERVICE_TYPES = ["Arrival", "Departure", "Turnaround", "Maintenance", "ADHOC", "Transportation"];
+const SERVICE_TYPES_HANDLING = ["Arrival", "Departure", "Turnaround", "Maintenance", "ADHOC", "Transportation"];
+const SERVICE_TYPES_SECURITY = ["Arrival Security", "Departure Security", "Maintenance Security", "Turnaround Security"];
+const SERVICE_TYPES = [...SERVICE_TYPES_HANDLING, ...SERVICE_TYPES_SECURITY];
 
 const PAGE_SIZE = 15;
 
@@ -203,6 +206,7 @@ export default function StationDispatchPage() {
   const [viewId, setViewId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [calMonth, setCalMonth] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
+  const [serviceCategory, setServiceCategory] = useState<ServiceCategory>("handling");
 
   const airlineMap = useMemo(() => {
     const m: Record<string, { name: string; iata: string }> = {};
@@ -224,7 +228,13 @@ export default function StationDispatchPage() {
 
   // Filtered dispatches
   const filtered = useMemo(() => {
+    const secTypes = SERVICE_TYPES_SECURITY.map(s => s.toLowerCase());
     let r = [...dispatches];
+    // Filter by service category
+    r = r.filter(d => {
+      const isSec = secTypes.includes(d.service_type.toLowerCase()) || SECURITY_CLEARANCE_TYPES.includes(d.service_type);
+      return serviceCategory === "security" ? isSec : !isSec;
+    });
     if (stationFilter) r = r.filter(d => d.station === stationFilter);
     if (dateFrom) r = r.filter(d => d.flight_date >= dateFrom);
     if (dateTo) r = r.filter(d => d.flight_date <= dateTo);
@@ -234,7 +244,7 @@ export default function StationDispatchPage() {
       r = r.filter(d => d.flight_no.toLowerCase().includes(s) || d.airline.toLowerCase().includes(s) || d.staff_names.toLowerCase().includes(s));
     }
     return r;
-  }, [dispatches, stationFilter, dateFrom, dateTo, airlineFilter, search]);
+  }, [dispatches, stationFilter, dateFrom, dateTo, airlineFilter, search, serviceCategory]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -242,6 +252,9 @@ export default function StationDispatchPage() {
   // Station flights for the date range
   const stationFlights = useMemo(() => {
     return flights.filter(f => {
+      // Filter by service category
+      const catMatch = getServiceCategory(f.clearance_type) === serviceCategory;
+      if (!catMatch) return false;
       if (stationFilter) {
         const routeMatch = (f.route || "").toUpperCase().includes(stationFilter);
         const authorityMatch = (f.authority || "").toUpperCase() === stationFilter;
@@ -262,7 +275,7 @@ export default function StationDispatchPage() {
       }
       return true;
     });
-  }, [flights, stationFilter, dateFrom, dateTo, airlineFilter, airlineMap]);
+  }, [flights, stationFilter, dateFrom, dateTo, airlineFilter, airlineMap, serviceCategory]);
 
   const assignedFlightIds = useMemo(() => new Set(dispatches.filter(d => d.flight_schedule_id).map(d => d.flight_schedule_id)), [dispatches]);
 
@@ -308,7 +321,7 @@ export default function StationDispatchPage() {
       airline: "",
       flight_no: "",
       flight_date: dateFrom,
-      service_type: "Arrival",
+      service_type: serviceCategory === "security" ? "Arrival Security" : "Arrival",
       staff_names: "",
       staff_count: 0,
       scheduled_start: "",
@@ -424,6 +437,14 @@ export default function StationDispatchPage() {
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Assign staff to flights, log service times & track overtime</p>
       </div>
+
+      {/* Service Category Tabs */}
+      <Tabs value={serviceCategory} onValueChange={(v) => setServiceCategory(v as ServiceCategory)}>
+        <TabsList>
+          <TabsTrigger value="handling">Handling</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -585,7 +606,7 @@ export default function StationDispatchPage() {
                   </select></div>
                 <div><label className="text-xs font-semibold text-muted-foreground">Service Type</label>
                   <select className={selectCls} value={formData.service_type || "Arrival"} onChange={e => updateFormField("service_type", e.target.value)}>
-                    {SERVICE_TYPES.map(t => <option key={t}>{t}</option>)}
+                    {(serviceCategory === "security" ? SERVICE_TYPES_SECURITY : SERVICE_TYPES_HANDLING).map(t => <option key={t}>{t}</option>)}
                   </select></div>
               </div>
 

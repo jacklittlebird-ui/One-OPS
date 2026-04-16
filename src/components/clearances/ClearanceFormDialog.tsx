@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { CLEARANCE_TYPES, SKD_TYPES } from "./ClearanceTypes";
+import { CLEARANCE_TYPES, SKD_TYPES, SECURITY_CLEARANCE_TYPES, getServiceCategory, getClearanceTypesByCategory, type ServiceCategory } from "./ClearanceTypes";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -88,6 +89,18 @@ function DatePickerField({ label, value, onChange }: { label: string; value: str
 }
 
 export default function ClearanceFormDialog({ open, onOpenChange, form, setForm, airlines, isEdit, onSave }: Props) {
+  const currentCategory = getServiceCategory(form.clearance_type || "Full Handling");
+  const [serviceTab, setServiceTab] = useState<ServiceCategory>(currentCategory);
+
+  const handleCategoryChange = (cat: ServiceCategory) => {
+    setServiceTab(cat);
+    const types = getClearanceTypesByCategory(cat);
+    if (!types.includes(form.clearance_type)) {
+      setForm({ ...form, clearance_type: types[0] });
+    }
+  };
+
+  const availableTypes = getClearanceTypesByCategory(serviceTab);
   const [airlineOpen, setAirlineOpen] = useState(false);
   const [stationOpen, setStationOpen] = useState(false);
   const { data: airports } = useQuery({
@@ -117,6 +130,13 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{isEdit ? "Edit Flight Schedule" : "New Flight Schedule"}</DialogTitle></DialogHeader>
         <div className="space-y-4">
+          {/* Service Category Tabs */}
+          <Tabs value={serviceTab} onValueChange={(v) => handleCategoryChange(v as ServiceCategory)}>
+            <TabsList className="w-full">
+              <TabsTrigger value="handling" className="flex-1">Handling</TabsTrigger>
+              <TabsTrigger value="security" className="flex-1">Security</TabsTrigger>
+            </TabsList>
+          </Tabs>
           {/* Account & Station */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -301,7 +321,7 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
                 <label className="text-xs text-muted-foreground">Service Type</label>
                 <Select value={form.clearance_type} onValueChange={v => setForm({ ...form, clearance_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{CLEARANCE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent>{availableTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
