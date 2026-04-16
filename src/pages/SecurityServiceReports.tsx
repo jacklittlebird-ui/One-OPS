@@ -345,7 +345,8 @@ export default function SecurityServiceReportsPage() {
           handling_agent: "",
           arrival_date: row.flight_date || null,
           departure_date: row.flight_date || null,
-          remarks: "Added from Security Service",
+          remarks: "",
+          notes: "Added from Security Service",
           purpose: "Security Service",
         };
         if (airlineData?.id) clearancePayload.airline_id = airlineData.id;
