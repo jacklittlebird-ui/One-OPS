@@ -436,25 +436,43 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
   const flightLabel = data.flightNo ? `${data.flightNo}` : "New Report";
   const routeLabel = data.route || "";
 
+  const totalCostPreview = ((data.civilAviationFee || 0) + (data.handlingFee || 0) + (data.airportCharge || 0)
+    + (data.fuelCharge || 0) + (data.cateringCharge || 0) + (data.hotacCharge || 0)).toFixed(2);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm">
-      <div className="bg-card rounded-xl border shadow-2xl w-full max-w-5xl max-h-[94vh] overflow-hidden m-4 flex flex-col">
-        {/* Header */}
-        <div className="bg-card border-b px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-foreground text-lg flex items-center gap-2">
-              <FileBarChart2 size={18} className="text-primary" />{title}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              <span className="text-primary font-semibold">{flightLabel}</span>
-              {routeLabel && <> · {routeLabel}</>}
-            </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 backdrop-blur-sm p-4">
+      <div className="bg-card rounded-2xl border shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+        {/* Header — gradient with summary chips */}
+        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b px-6 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-11 w-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 ring-1 ring-primary/20">
+                <FileBarChart2 size={20} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-bold text-foreground text-lg leading-tight truncate">{title}</h2>
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs mt-0.5">
+                  <span className="font-bold text-primary">{flightLabel}</span>
+                  {routeLabel && <span className="text-muted-foreground">· {routeLabel}</span>}
+                  {data.station && <span className="text-muted-foreground">· {data.station}</span>}
+                  {data.handlingType && (
+                    <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-semibold">{data.handlingType}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex flex-col items-end px-3 py-1.5 rounded-lg bg-card/70 border">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Cost</span>
+                <span className="text-sm font-bold text-success">{data.currency || "USD"} {totalCostPreview}</span>
+              </div>
+              <button onClick={onCancel} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors"><X size={18} /></button>
+            </div>
           </div>
-          <button onClick={onCancel} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground"><X size={18} /></button>
         </div>
 
         {/* Pipeline stepper - hidden in print/download views */}
-        <div className="px-6 py-3 border-b bg-muted/20 flex items-center justify-center print:hidden no-print">
+        <div className="px-6 py-3 border-b bg-muted/30 flex items-center justify-center print:hidden no-print">
            <PipelineStepper
             currentStage={derivePipelineStage({
               isLinked: !!data.id,
@@ -466,15 +484,16 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
         </div>
 
         {/* Flight status bar */}
-        <div className="px-6 py-2 border-b flex items-center gap-1 bg-muted/30">
-          {FLIGHT_STATUSES.map((s, i) => (
+        <div className="px-6 py-2.5 border-b flex items-center gap-2 bg-muted/20">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mr-1">Status</span>
+          {FLIGHT_STATUSES.map((s) => (
             <button
               key={s}
               onClick={() => set("flightStatus", s)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                 data.flightStatus === s
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-primary text-primary-foreground shadow-sm scale-[1.02]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted bg-card/60 border"
               }`}
             >
               {s}
@@ -483,24 +502,25 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
         </div>
 
         {/* Tab navigation */}
-        <div className="px-6 py-2 border-b flex flex-wrap gap-1 bg-muted/20">
+        <div className="px-4 pt-2 border-b flex flex-wrap gap-1 bg-card overflow-x-auto">
           {REPORT_TABS.map(t => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap border-b-2 -mb-px ${
                 activeTab === t.key
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground hover:text-foreground border-transparent hover:border-border"
               }`}
             >
-              {tabIcons[t.key]}{t.label}
+              <span className={activeTab === t.key ? "text-primary" : "text-muted-foreground"}>{tabIcons[t.key]}</span>
+              {t.label}
             </button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-muted/10">
           {activeTab === "flight" && (
             <div className="space-y-6">
               <div>
