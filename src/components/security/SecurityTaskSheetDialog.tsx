@@ -16,10 +16,14 @@ function formatTimeInput(value: string, prevValue: string): string {
 }
 
 interface TaskSheetData {
-  flight_type: string; // SKD Type value
+  flight_type: string;
   delay: string;
   shift_start: string;
   shift_end: string;
+  sta: string;
+  std: string;
+  ata: string;
+  atd: string;
   cargo_observer_1: string;
   cargo_observer_2: string;
   hold_baggage_observer_1: string;
@@ -40,6 +44,10 @@ const emptyTaskSheet = (): TaskSheetData => ({
   delay: "",
   shift_start: "",
   shift_end: "",
+  sta: "",
+  std: "",
+  ata: "",
+  atd: "",
   cargo_observer_1: "",
   cargo_observer_2: "",
   hold_baggage_observer_1: "",
@@ -124,18 +132,25 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
       if (saved && typeof saved === "object") {
         const restored = { ...emptyTaskSheet(), ...saved } as TaskSheetData;
         if (!restored.flight_type && skdType) restored.flight_type = skdType;
+        // Populate sta/std from props if not already saved
+        if (!restored.sta && sta) restored.sta = sta;
+        if (!restored.std && std) restored.std = std;
+        if (!restored.ata && ata) restored.ata = ata;
+        if (!restored.atd && atd) restored.atd = atd;
         setSheet(restored);
       } else {
         setSheet({
           ...emptyTaskSheet(),
           flight_type: skdType || "",
-          shift_start: row.actual_start || row.scheduled_start || "",
-          shift_end: row.actual_end || row.scheduled_end || "",
+          sta: sta || "",
+          std: std || "",
+          ata: ata || "",
+          atd: atd || "",
           remarks: row.notes || "",
         });
       }
     }
-  }, [row, skdType]);
+  }, [row, skdType, sta, std, ata, atd]);
 
   if (!row || !editableRow) return null;
 
@@ -170,12 +185,12 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
     if (!row) return;
     const v = sheet;
     const flightDate = formatDate(row.flight_date);
-    const reg = registration || "—";
-    const rt = route || "—";
-    const staVal = sta || "—";
-    const stdVal = std || "—";
-    const ataVal = ata || row.actual_start || "—";
-    const atdVal = atd || row.actual_end || "—";
+    const reg = editableRow?.registration || registration || "—";
+    const rt = editableRow?.route || route || "—";
+    const staVal = v.sta || sta || "—";
+    const stdVal = v.std || std || "—";
+    const ataVal = v.ata || ata || "—";
+    const atdVal = v.atd || atd || "—";
 
     const ftChecks = FLIGHT_TYPES.map(ft =>
       `<td style="text-align:center;border:1px solid #333;padding:4px 6px;font-size:11px;">${ft === v.flight_type ? "☒" : "☐"} ${ft}</td>`
@@ -387,11 +402,11 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                 <tr className="border-b">
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">STA</td>
                   <td className="px-3 py-2 text-foreground border-r w-20 font-mono">
-                    {isNew ? <input className={inputCls} value={editableRow.scheduled_start} onChange={e => updateRow("scheduled_start", formatTimeInput(e.target.value, editableRow.scheduled_start))} placeholder="HH:MM" maxLength={5} /> : (sta || "—")}
+                    <input className={inputCls} value={sheet.sta} onChange={e => update("sta", formatTimeInput(e.target.value, sheet.sta))} placeholder="HH:MM" maxLength={5} />
                   </td>
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">ATA</td>
                   <td className="px-3 py-2 text-foreground border-r w-20 font-mono">
-                    {isNew ? <input className={inputCls} value={editableRow.actual_start} onChange={e => updateRow("actual_start", formatTimeInput(e.target.value, editableRow.actual_start))} placeholder="HH:MM" maxLength={5} /> : (ata || currentRow.actual_start || "—")}
+                    <input className={inputCls} value={sheet.ata} onChange={e => update("ata", formatTimeInput(e.target.value, sheet.ata))} placeholder="HH:MM" maxLength={5} />
                   </td>
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-24">Skd Type</td>
                    <td className="px-3 py-2">
@@ -408,11 +423,11 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                  <tr className="border-b">
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">STD</td>
                    <td className="px-3 py-2 text-foreground border-r font-mono">
-                     {isNew ? <input className={inputCls} value={editableRow.scheduled_end} onChange={e => updateRow("scheduled_end", formatTimeInput(e.target.value, editableRow.scheduled_end))} placeholder="HH:MM" maxLength={5} /> : (std || "—")}
+                     <input className={inputCls} value={sheet.std} onChange={e => update("std", formatTimeInput(e.target.value, sheet.std))} placeholder="HH:MM" maxLength={5} />
                    </td>
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">ATD</td>
                    <td className="px-3 py-2 text-foreground border-r font-mono">
-                     {isNew ? <input className={inputCls} value={editableRow.actual_end} onChange={e => updateRow("actual_end", formatTimeInput(e.target.value, editableRow.actual_end))} placeholder="HH:MM" maxLength={5} /> : (atd || currentRow.actual_end || "—")}
+                     <input className={inputCls} value={sheet.atd} onChange={e => update("atd", formatTimeInput(e.target.value, sheet.atd))} placeholder="HH:MM" maxLength={5} />
                    </td>
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">Service Type</td>
                    <td className="px-3 py-2">
