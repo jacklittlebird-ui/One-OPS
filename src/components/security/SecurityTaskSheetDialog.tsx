@@ -525,7 +525,7 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
 
           {/* Footer matching the PDF */}
           <div className="flex justify-between items-center text-xs text-muted-foreground pt-3 border-t">
-            <span>{row.airline} Security Task Sheet</span>
+            <span>{currentRow.airline} Security Task Sheet</span>
             <span>V.03 22Jan2023</span>
           </div>
         </div>
