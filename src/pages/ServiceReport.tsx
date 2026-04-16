@@ -964,6 +964,7 @@ function HandlingServiceReportContent() {
           onChange={setNewReport}
           onSave={saveNew}
           onCancel={() => setShowAdd(false)}
+          clearanceStatus={activeClearanceStatus}
         />
       )}
       {editId && (
@@ -973,6 +974,7 @@ function HandlingServiceReportContent() {
           onChange={setEditData}
           onSave={saveEdit}
           onCancel={() => setEditId(null)}
+          clearanceStatus={activeClearanceStatus}
         />
       )}
     </div>
