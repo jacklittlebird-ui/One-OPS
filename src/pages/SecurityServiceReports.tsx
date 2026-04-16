@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import {
-  Search, Plus, Download, Shield, Plane, Building2, Clock, Users, X,
+  Search, Plus, Download, Shield, Plane, Building2, Clock, Users,
   ChevronLeft, ChevronRight, Pencil, CheckCircle2, XCircle, AlertTriangle,
   FileBarChart2, DollarSign, MessageSquare, ExternalLink, CalendarDays
 } from "lucide-react";
