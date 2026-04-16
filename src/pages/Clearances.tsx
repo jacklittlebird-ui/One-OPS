@@ -14,7 +14,7 @@ import { Plus, Search, Pencil, Trash2, ShieldCheck, Clock, CheckCircle2, XCircle
 import { toast } from "@/hooks/use-toast";
 import { exportToExcel } from "@/lib/exportExcel";
 import { formatDateDMY } from "@/lib/utils";
-import { ClearanceRow, CLEARANCE_TYPES, STATUS_CONFIG, emptyForm } from "@/components/clearances/ClearanceTypes";
+import { ClearanceRow, CLEARANCE_TYPES, STATUS_CONFIG, emptyForm, SECURITY_CLEARANCE_TYPES, getServiceCategory, getClearanceTypesByCategory, type ServiceCategory } from "@/components/clearances/ClearanceTypes";
 import ClearanceFormDialog from "@/components/clearances/ClearanceFormDialog";
 import ClearanceDetailDialog from "@/components/clearances/ClearanceDetailDialog";
 import ScheduleUploadDialog from "@/components/clearances/ScheduleUploadDialog";
@@ -118,6 +118,7 @@ export default function ClearancesPage() {
   const [airlineFilter, setAirlineFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [serviceCategory, setServiceCategory] = useState<ServiceCategory>("handling");
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -176,6 +177,8 @@ export default function ClearancesPage() {
   const registrations = [...new Set(data.map(c => c.registration).filter(Boolean))].sort();
 
   const filtered = data.filter(c => {
+    // Filter by service category first
+    const categoryMatch = getServiceCategory(c.clearance_type) === serviceCategory;
     const ms = c.flight_no.toLowerCase().includes(search.toLowerCase()) || c.permit_no.toLowerCase().includes(search.toLowerCase()) || c.route.toLowerCase().includes(search.toLowerCase());
     const mst = statusFilter === "all" || c.status === statusFilter;
     const mt = typeFilter === "all" || c.clearance_type === typeFilter;
@@ -185,7 +188,7 @@ export default function ClearancesPage() {
     const flightDate = c.arrival_date || c.departure_date || "";
     const mdf = !dateFrom || flightDate >= dateFrom;
     const mdt = !dateTo || flightDate <= dateTo;
-    return ms && mst && mt && mstation && mreg && mairline && mdf && mdt;
+    return categoryMatch && ms && mst && mt && mstation && mreg && mairline && mdf && mdt;
   });
 
   const pendingApproval = data.filter(c => c.status === "Pending" && c.remarks?.includes("Added from Station Dispatch"));
@@ -208,7 +211,12 @@ export default function ClearancesPage() {
     toast({ title: "❌ Rejected", description: `Flight ${c.flight_no} has been rejected.` });
   };
 
-  const openAdd = () => { setEditItem(null); setForm(emptyForm); setDialogOpen(true); };
+  const openAdd = () => {
+    setEditItem(null);
+    const defaultType = serviceCategory === "security" ? "Arrival Security" : "Full Handling";
+    setForm({ ...emptyForm, clearance_type: defaultType });
+    setDialogOpen(true);
+  };
   const openEdit = (c: ClearanceRow) => {
     setEditItem(c);
     setForm({
@@ -388,13 +396,25 @@ export default function ClearancesPage() {
         ))}
       </div>
 
+      {/* Service Category Tabs */}
+      <Tabs value={serviceCategory} onValueChange={(v) => { setServiceCategory(v as ServiceCategory); setTypeFilter("all"); }} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="handling" className="gap-1.5">
+            <ShieldCheck size={14} /> Handling
+          </TabsTrigger>
+          <TabsTrigger value="security" className="gap-1.5">
+            <ShieldCheck size={14} /> Security
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={serviceCategory}>
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">All Flights</TabsTrigger>
           <TabsTrigger value="pending-approval" className="gap-1">
             Pending Approval
-            {pendingApproval.length > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 min-w-5 text-xs px-1.5">{pendingApproval.length}</Badge>
+            {pendingApproval.filter(c => getServiceCategory(c.clearance_type) === serviceCategory).length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 text-xs px-1.5">{pendingApproval.filter(c => getServiceCategory(c.clearance_type) === serviceCategory).length}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -413,7 +433,7 @@ export default function ClearancesPage() {
             </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="all">All Types</SelectItem>{CLEARANCE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              <SelectContent><SelectItem value="all">All Types</SelectItem>{getClearanceTypesByCategory(serviceCategory).map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
