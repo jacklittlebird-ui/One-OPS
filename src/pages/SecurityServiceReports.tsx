@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SECURITY_CLEARANCE_TYPES } from "@/components/clearances/ClearanceTypes";
+import SecurityTaskSheetDialog from "@/components/security/SecurityTaskSheetDialog";
 
 const PAGE_SIZE = 15;
 
@@ -68,6 +69,7 @@ interface DispatchRow {
   irregularity_id: string | null;
   created_at: string;
   updated_at: string;
+  task_sheet_data?: any;
 }
 
 function timeDiffHours(start: string, end: string): number {
@@ -165,6 +167,20 @@ export default function SecurityServiceReportsPage() {
     return map;
   }, [securityFlights]);
 
+  // Build lookup for flight schedule details (registration, route, sta, std)
+  const flightDetailsById = useMemo(() => {
+    const map = new Map<string, { registration: string; route: string; sta: string; std: string; ata: string; atd: string }>();
+    securityFlights.forEach((f: any) => map.set(f.id, {
+      registration: f.registration || "",
+      route: f.route || "",
+      sta: f.sta || "",
+      std: f.std || "",
+      ata: "",
+      atd: "",
+    }));
+    return map;
+  }, [securityFlights]);
+
   // Filters
   const allStations = useMemo(() => [...new Set(dispatches.map(d => d.station))].sort(), [dispatches]);
   const allServiceTypes = useMemo(() => [...new Set(dispatches.map(d => d.service_type))].sort(), [dispatches]);
@@ -226,27 +242,18 @@ export default function SecurityServiceReportsPage() {
   const flightsTotalPages = Math.max(1, Math.ceil(filteredFlights.length / PAGE_SIZE));
   const flightsPageData = filteredFlights.slice((flightsPage - 1) * PAGE_SIZE, flightsPage * PAGE_SIZE);
 
-  const saveEdit = () => {
-    if (!editRow) return;
-    const actualHrs = timeDiffHours(editRow.actual_start, editRow.actual_end);
-    const overtimeHrs = Math.max(0, actualHrs - editRow.contract_duration_hours);
-    const overtimeCharge = overtimeHrs * editRow.overtime_rate * editRow.staff_count;
-    const totalCharge = editRow.base_fee + (editRow.service_rate * editRow.staff_count) + overtimeCharge;
+  const saveEdit = () => {};
 
+  const saveTaskSheet = (row: DispatchRow, taskSheet: any) => {
     updateMutation.mutate({
-      id: editRow.id,
-      staff_names: editRow.staff_names,
-      staff_count: editRow.staff_count,
-      actual_start: editRow.actual_start,
-      actual_end: editRow.actual_end,
-      actual_duration_hours: actualHrs,
-      overtime_hours: overtimeHrs,
-      overtime_charge: overtimeCharge,
-      total_charge: totalCharge,
-      notes: editRow.notes,
+      id: row.id,
+      task_sheet_data: taskSheet,
+      notes: taskSheet.remarks || row.notes,
+      actual_start: taskSheet.shift_start || row.actual_start,
+      actual_end: taskSheet.shift_end || row.actual_end,
+      actual_duration_hours: timeDiffHours(taskSheet.shift_start || row.actual_start, taskSheet.shift_end || row.actual_end),
       status: "Completed",
-      review_status: editRow.review_status === "Draft" ? "Draft" : editRow.review_status,
-    });
+    } as any);
     setEditRow(null);
   };
 
@@ -605,164 +612,16 @@ export default function SecurityServiceReportsPage() {
         )}
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editRow} onOpenChange={(open) => !open && setEditRow(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield size={18} className="text-primary" />
-              Service Report — {editRow?.flight_no} ({editRow?.airline})
-            </DialogTitle>
-          </DialogHeader>
-          {editRow && (
-            <Tabs defaultValue="details" className="mt-2">
-              <TabsList className="w-full">
-                <TabsTrigger value="details" className="flex-1">Flight & Team</TabsTrigger>
-                <TabsTrigger value="timing" className="flex-1">Service Times</TabsTrigger>
-                <TabsTrigger value="charges" className="flex-1">Charges</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Station</label>
-                    <input className={inputCls} value={editRow.station} readOnly />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Airline</label>
-                    <input className={inputCls} value={editRow.airline} readOnly />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Flight No</label>
-                    <input className={inputCls} value={editRow.flight_no} readOnly />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Flight Date</label>
-                    <input className={inputCls} value={editRow.flight_date} readOnly />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Service Type</label>
-                    <input className={inputCls} value={editRow.service_type} readOnly />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Staff Count</label>
-                    <input
-                      type="number" className={inputCls}
-                      value={editRow.staff_count}
-                      onChange={e => setEditRow({ ...editRow, staff_count: +e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase">Staff Names</label>
-                  <textarea
-                    className={inputCls + " min-h-[60px]"}
-                    value={editRow.staff_names}
-                    onChange={e => setEditRow({ ...editRow, staff_names: e.target.value })}
-                    placeholder="Enter staff names (comma separated)"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase">Notes / Incidents</label>
-                  <textarea
-                    className={inputCls + " min-h-[60px]"}
-                    value={editRow.notes}
-                    onChange={e => setEditRow({ ...editRow, notes: e.target.value })}
-                    placeholder="Any incidents, deviations, or notes about this service…"
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="timing" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Scheduled Start</label>
-                    <input className={inputCls} value={editRow.scheduled_start} readOnly />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Scheduled End</label>
-                    <input className={inputCls} value={editRow.scheduled_end} readOnly />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Actual Start</label>
-                    <input
-                      className={inputCls}
-                      value={editRow.actual_start}
-                      onChange={e => setEditRow({ ...editRow, actual_start: e.target.value })}
-                      placeholder="HH:MM"
-                      maxLength={5}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Actual End</label>
-                    <input
-                      className={inputCls}
-                      value={editRow.actual_end}
-                      onChange={e => setEditRow({ ...editRow, actual_end: e.target.value })}
-                      placeholder="HH:MM"
-                      maxLength={5}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4 bg-muted/50 rounded-lg p-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Contract Duration</label>
-                    <div className="text-sm font-bold text-foreground mt-1">{editRow.contract_duration_hours}h</div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Actual Duration</label>
-                    <div className="text-sm font-bold text-foreground mt-1">
-                      {timeDiffHours(editRow.actual_start, editRow.actual_end)}h
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Overtime</label>
-                    <div className="text-sm font-bold text-warning mt-1">
-                      {Math.max(0, timeDiffHours(editRow.actual_start, editRow.actual_end) - editRow.contract_duration_hours).toFixed(2)}h
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="charges" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Base Fee</label>
-                    <div className="text-sm font-bold text-foreground mt-1">${editRow.base_fee.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Service Rate</label>
-                    <div className="text-sm font-bold text-foreground mt-1">${editRow.service_rate.toLocaleString()}</div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Overtime Rate</label>
-                    <div className="text-sm font-bold text-foreground mt-1">${editRow.overtime_rate}/staff/hr</div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Overtime Charge</label>
-                    <div className="text-sm font-bold text-warning mt-1">
-                      ${(Math.max(0, timeDiffHours(editRow.actual_start, editRow.actual_end) - editRow.contract_duration_hours) * editRow.overtime_rate * editRow.staff_count).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-muted-foreground">TOTAL CHARGE</span>
-                    <span className="text-xl font-bold text-success">
-                      ${(editRow.base_fee + (editRow.service_rate * editRow.staff_count) + (Math.max(0, timeDiffHours(editRow.actual_start, editRow.actual_end) - editRow.contract_duration_hours) * editRow.overtime_rate * editRow.staff_count)).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setEditRow(null)}>Cancel</Button>
-            <Button onClick={saveEdit}>Save Report</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
+      {/* Security Task Sheet Dialog */}
+      <SecurityTaskSheetDialog
+        row={editRow}
+        onClose={() => setEditRow(null)}
+        onSave={saveTaskSheet}
+        registration={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.registration : undefined}
+        route={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.route : undefined}
+        sta={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.sta : undefined}
+        std={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.std : undefined}
+      />
       {/* Review Dialog */}
       <Dialog open={!!reviewRow} onOpenChange={(open) => !open && setReviewRow(null)}>
         <DialogContent className="max-w-md">
