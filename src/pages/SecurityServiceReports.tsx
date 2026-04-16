@@ -456,6 +456,9 @@ export default function SecurityServiceReportsPage() {
                         <td className="px-3 py-2.5">
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{r.service_type}</span>
                         </td>
+                        <td className="px-3 py-2.5 text-foreground text-xs">
+                          {r.flight_schedule_id ? (flightDetailsById.get(r.flight_schedule_id)?.skd_type || "—") : "—"}
+                        </td>
                         <td className="px-3 py-2.5 text-foreground">{r.staff_count}</td>
                         <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
                           {r.actual_start && r.actual_end ? `${r.actual_start}–${r.actual_end}` : "—"}
