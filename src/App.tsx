@@ -106,7 +106,7 @@ function AppRoutes() {
       <Route path="/notifications" element={<ProtectedRoute><AppLayout><NotificationsPage /></AppLayout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
       <Route path="/audit-log" element={<ProtectedRoute><AppLayout><AuditLogPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/station-dispatch" element={<ProtectedRoute><AppLayout><StationDispatchPage /></AppLayout></ProtectedRoute>} />
+      <Route path="/station-dispatch" element={<Navigate to="/service-report" replace />} />
       <Route path="/irregularity-reports" element={<ProtectedRoute><AppLayout><IrregularityReportsPage /></AppLayout></ProtectedRoute>} />
       <Route path="/security-service-reports" element={<Navigate to="/service-report" replace />} />
       <Route path="*" element={<NotFound />} />
