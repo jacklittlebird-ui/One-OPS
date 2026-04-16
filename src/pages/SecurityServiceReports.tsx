@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import {
-  Search, Plus, Download, Shield, Plane, Building2, Clock, Users,
+  Search, Plus, Download, Shield, Plane, Building2, Clock, Users, X,
   ChevronLeft, ChevronRight, Pencil, CheckCircle2, XCircle, AlertTriangle,
   FileBarChart2, DollarSign, MessageSquare, ExternalLink, CalendarDays
 } from "lucide-react";
@@ -99,6 +99,8 @@ export default function SecurityServiceReportsPage() {
   const [reviewComment, setReviewComment] = useState("");
   const [activeMainTab, setActiveMainTab] = useState<"reports" | "flights">("reports");
   const [flightsPage, setFlightsPage] = useState(1);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newFormData, setNewFormData] = useState<Partial<DispatchRow>>({});
 
   // Fetch dispatch assignments (completed ones = service reports)
   const { data: dispatches = [], isLoading } = useQuery({
@@ -160,7 +162,84 @@ export default function SecurityServiceReportsPage() {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  // Build a lookup for flight schedule status by id
+  // Create mutation for new service reports
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<DispatchRow>) => {
+      const { id, created_at, updated_at, ...rest } = data as any;
+      const { error } = await supabase.from("dispatch_assignments").insert(rest);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dispatch_assignments"] });
+      toast({ title: "Created", description: "New security service report created." });
+      setShowNewForm(false);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  function calcDuration(start: string, end: string) {
+    if (!start || !end) return 0;
+    const [h1, m1] = start.split(":").map(Number);
+    const [h2, m2] = end.split(":").map(Number);
+    if ([h1, m1, h2, m2].some(isNaN)) return 0;
+    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff < 0) diff += 24 * 60;
+    return +(diff / 60).toFixed(2);
+  }
+
+  const openNewForm = () => {
+    setNewFormData({
+      station: "CAI",
+      airline: "",
+      flight_no: "",
+      flight_date: new Date().toISOString().slice(0, 10),
+      service_type: "Arrival Security",
+      staff_names: "",
+      staff_count: 0,
+      scheduled_start: "",
+      scheduled_end: "",
+      actual_start: "",
+      actual_end: "",
+      contract_duration_hours: 0,
+      actual_duration_hours: 0,
+      overtime_hours: 0,
+      overtime_rate: 0,
+      base_fee: 0,
+      service_rate: 0,
+      overtime_charge: 0,
+      total_charge: 0,
+      status: "Pending",
+      notes: "",
+      dispatched_by: session?.user?.email || "",
+    });
+    setShowNewForm(true);
+  };
+
+  const updateNewFormField = (key: string, val: any) => {
+    const updated = { ...newFormData, [key]: val };
+    if (key === "actual_start" || key === "actual_end") {
+      const actualHrs = calcDuration(updated.actual_start || "", updated.actual_end || "");
+      const contractHrs = updated.contract_duration_hours || 0;
+      const overtime = Math.max(0, actualHrs - contractHrs);
+      const overtimeCharge = overtime * (updated.overtime_rate || 0) * (updated.staff_count || 1);
+      const total = (updated.base_fee || 0) + (updated.service_rate || 0) + overtimeCharge;
+      updated.actual_duration_hours = actualHrs;
+      updated.overtime_hours = overtime;
+      updated.overtime_charge = Math.round(overtimeCharge * 100) / 100;
+      updated.total_charge = Math.round(total * 100) / 100;
+    }
+    setNewFormData(updated);
+  };
+
+  const STATIONS = [
+    { code: "CAI", name: "Cairo International" },
+    { code: "HRG", name: "Hurghada International" },
+    { code: "SSH", name: "Sharm El Sheikh" },
+    { code: "LXR", name: "Luxor International" },
+    { code: "ASW", name: "Aswan International" },
+  ];
+
+
   const flightStatusById = useMemo(() => {
     const map = new Map<string, string>();
     securityFlights.forEach((f: any) => map.set(f.id, f.status || "Pending"));
@@ -418,6 +497,7 @@ export default function SecurityServiceReportsPage() {
           <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); setFlightsPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="From" />
           <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); setFlightsPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="To" />
           <button onClick={handleExport} className="toolbar-btn-outline"><Download size={14} /> Export</button>
+          <button onClick={openNewForm} className="toolbar-btn-primary"><Plus size={14} /> New Service Report</button>
         </div>
 
         {activeMainTab === "reports" ? (
@@ -677,6 +757,112 @@ export default function SecurityServiceReportsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* New Service Report Form Modal */}
+      {showNewForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm">
+          <div className="bg-card rounded-xl border shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto m-4">
+            <div className="sticky top-0 bg-card border-b px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
+              <h2 className="font-bold text-foreground text-lg flex items-center gap-2"><Shield size={18} /> New Security Service Report</h2>
+              <button onClick={() => setShowNewForm(false)} className="p-1.5 hover:bg-muted rounded-full text-muted-foreground"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className="text-xs font-semibold text-muted-foreground">Flight No <span className="text-destructive">*</span></label>
+                  <input className={inputCls} value={newFormData.flight_no || ""} onChange={e => updateNewFormField("flight_no", e.target.value)} /></div>
+                <div><label className="text-xs font-semibold text-muted-foreground">Airline <span className="text-destructive">*</span></label>
+                  <input className={inputCls} value={newFormData.airline || ""} onChange={e => updateNewFormField("airline", e.target.value)} /></div>
+                <div><label className="text-xs font-semibold text-muted-foreground">Service Type</label>
+                  <select className={inputCls} value={newFormData.service_type || "Arrival Security"} onChange={e => updateNewFormField("service_type", e.target.value)}>
+                    {SECURITY_CLEARANCE_TYPES.map(t => <option key={t}>{t}</option>)}
+                  </select></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className="text-xs font-semibold text-muted-foreground">Station</label>
+                  <select className={inputCls} value={newFormData.station || "CAI"} onChange={e => updateNewFormField("station", e.target.value)}>
+                    {STATIONS.map(s => <option key={s.code} value={s.code}>{s.code} — {s.name}</option>)}
+                  </select></div>
+                <div><label className="text-xs font-semibold text-muted-foreground">Date <span className="text-destructive">*</span></label>
+                  <input type="date" className={inputCls} value={newFormData.flight_date || ""} onChange={e => updateNewFormField("flight_date", e.target.value)} /></div>
+                <div><label className="text-xs font-semibold text-muted-foreground">Status</label>
+                  <select className={inputCls} value={newFormData.status || "Pending"} onChange={e => updateNewFormField("status", e.target.value)}>
+                    {["Pending", "Dispatched", "Completed"].map(s => <option key={s}>{s}</option>)}
+                  </select></div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2"><Users size={14} /> Staff Assignment</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-xs font-semibold text-muted-foreground">Staff Count</label>
+                    <input type="number" className={inputCls} value={newFormData.staff_count || 0} onChange={e => updateNewFormField("staff_count", +e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Dispatched By</label>
+                    <input className={inputCls} value={newFormData.dispatched_by || ""} onChange={e => updateNewFormField("dispatched_by", e.target.value)} /></div>
+                </div>
+                <div className="mt-3"><label className="text-xs font-semibold text-muted-foreground">Staff Names (comma-separated)</label>
+                  <input className={inputCls} value={newFormData.staff_names || ""} onChange={e => updateNewFormField("staff_names", e.target.value)} placeholder="Ahmed Hassan, Omar Ali, ..." /></div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-bold text-foreground mb-2 flex items-center gap-2"><Clock size={14} /> Time Tracking</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><label className="text-xs font-semibold text-muted-foreground">Scheduled Start</label>
+                    <input type="time" className={inputCls} value={newFormData.scheduled_start || ""} onChange={e => updateNewFormField("scheduled_start", e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Scheduled End</label>
+                    <input type="time" className={inputCls} value={newFormData.scheduled_end || ""} onChange={e => updateNewFormField("scheduled_end", e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Actual Start</label>
+                    <input type="time" className={inputCls} value={newFormData.actual_start || ""} onChange={e => updateNewFormField("actual_start", e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Actual End</label>
+                    <input type="time" className={inputCls} value={newFormData.actual_end || ""} onChange={e => updateNewFormField("actual_end", e.target.value)} /></div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-3">
+                  <div><label className="text-xs font-semibold text-muted-foreground">Contract Duration (hrs)</label>
+                    <input type="number" step="0.5" className={inputCls} value={newFormData.contract_duration_hours || 0} onChange={e => updateNewFormField("contract_duration_hours", +e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Actual Duration</label>
+                    <input type="number" className={inputCls} value={newFormData.actual_duration_hours || 0} readOnly /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Overtime Hours</label>
+                    <input type="number" className={inputCls + ((newFormData.overtime_hours || 0) > 0 ? " text-warning font-bold" : "")} value={newFormData.overtime_hours || 0} readOnly /></div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-bold text-foreground mb-2">Charges</h3>
+                <div className="grid grid-cols-4 gap-4">
+                  <div><label className="text-xs font-semibold text-muted-foreground">Base Fee</label>
+                    <input type="number" className={inputCls} value={newFormData.base_fee || 0} onChange={e => updateNewFormField("base_fee", +e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Service Rate</label>
+                    <input type="number" className={inputCls} value={newFormData.service_rate || 0} onChange={e => updateNewFormField("service_rate", +e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">OT Rate</label>
+                    <input type="number" className={inputCls} value={newFormData.overtime_rate || 0} onChange={e => updateNewFormField("overtime_rate", +e.target.value)} /></div>
+                  <div><label className="text-xs font-semibold text-muted-foreground">Total Charge</label>
+                    <input type="number" className={inputCls + " font-bold text-success"} value={newFormData.total_charge || 0} readOnly /></div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <label className="text-xs font-semibold text-muted-foreground">Notes</label>
+                <textarea className={inputCls + " min-h-[60px] resize-none"} value={newFormData.notes || ""} onChange={e => updateNewFormField("notes", e.target.value)} placeholder="Add notes..." />
+              </div>
+
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="outline" onClick={() => setShowNewForm(false)}>Cancel</Button>
+                <Button
+                  onClick={() => {
+                    if (!newFormData.flight_no || !newFormData.airline || !newFormData.flight_date) {
+                      toast({ title: "Missing Fields", description: "Flight No, Airline, and Date are required.", variant: "destructive" });
+                      return;
+                    }
+                    createMutation.mutate(newFormData);
+                  }}
+                  disabled={createMutation.isPending}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <Plus size={14} className="mr-1" /> {createMutation.isPending ? "Saving…" : "Create Service Report"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
