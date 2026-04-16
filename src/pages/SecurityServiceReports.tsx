@@ -679,13 +679,6 @@ export default function SecurityServiceReportsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dispatch & Station Flights for Security */}
-      <div className="border-t pt-6 mt-6">
-        <h2 className="text-lg font-bold text-foreground flex items-center gap-2 mb-4">
-          <Shield size={20} className="text-primary" /> Dispatch & Station Flights
-        </h2>
-        <DispatchContent serviceCategory="security" />
-      </div>
     </div>
   );
 }
