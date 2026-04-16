@@ -386,7 +386,7 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                   </td>
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">ATA</td>
                   <td className="px-3 py-2 text-foreground border-r w-20 font-mono">
-                    {isNew ? <input className={inputCls} value={editableRow.actual_start} onChange={e => updateRow("actual_start", e.target.value)} placeholder="HH:MM" maxLength={5} /> : (ata || currentRow.actual_start || "—")}
+                    {isNew ? <input className={inputCls} value={editableRow.actual_start} onChange={e => updateRow("actual_start", formatTimeInput(e.target.value, editableRow.actual_start))} placeholder="HH:MM" maxLength={5} /> : (ata || currentRow.actual_start || "—")}
                   </td>
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-24">Skd Type</td>
                    <td className="px-3 py-2">
@@ -403,11 +403,11 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                  <tr className="border-b">
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">STD</td>
                    <td className="px-3 py-2 text-foreground border-r font-mono">
-                     {isNew ? <input className={inputCls} value={editableRow.scheduled_end} onChange={e => updateRow("scheduled_end", e.target.value)} placeholder="HH:MM" maxLength={5} /> : (std || "—")}
+                     {isNew ? <input className={inputCls} value={editableRow.scheduled_end} onChange={e => updateRow("scheduled_end", formatTimeInput(e.target.value, editableRow.scheduled_end))} placeholder="HH:MM" maxLength={5} /> : (std || "—")}
                    </td>
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">ATD</td>
                    <td className="px-3 py-2 text-foreground border-r font-mono">
-                     {isNew ? <input className={inputCls} value={editableRow.actual_end} onChange={e => updateRow("actual_end", e.target.value)} placeholder="HH:MM" maxLength={5} /> : (atd || currentRow.actual_end || "—")}
+                     {isNew ? <input className={inputCls} value={editableRow.actual_end} onChange={e => updateRow("actual_end", formatTimeInput(e.target.value, editableRow.actual_end))} placeholder="HH:MM" maxLength={5} /> : (atd || currentRow.actual_end || "—")}
                    </td>
                    <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">Service Type</td>
                    <td className="px-3 py-2">
@@ -431,9 +431,9 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40" colSpan={2}>ARR/DEP SHIFT START</td>
                   <td className="px-3 py-2 border-r" colSpan={2}>
                     <input
-                      className={inputCls}
-                      value={sheet.shift_start}
-                      onChange={e => update("shift_start", e.target.value)}
+                       className={inputCls}
+                       value={sheet.shift_start}
+                       onChange={e => update("shift_start", formatTimeInput(e.target.value, sheet.shift_start))}
                       placeholder="HH:MM"
                       maxLength={5}
                     />
