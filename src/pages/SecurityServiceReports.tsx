@@ -466,18 +466,21 @@ export default function SecurityServiceReportsPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
-          <Shield size={22} className="text-primary" /> Security Service Reports
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Security service documentation · Pipeline:{" "}
-          <button onClick={() => navigate("/clearances")} className="text-primary hover:underline">Schedule</button>
-          {" → "}
-          <span className="font-semibold text-foreground">Security Service</span>
-          {" → "}
-          <button onClick={() => navigate("/invoices")} className="text-primary hover:underline">Finance</button>
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
+            <Shield size={22} className="text-primary" /> Security Service Reports
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Security service documentation · Pipeline:{" "}
+            <button onClick={() => navigate("/clearances")} className="text-primary hover:underline">Schedule</button>
+            {" → "}
+            <span className="font-semibold text-foreground">Security Service</span>
+            {" → "}
+            <button onClick={() => navigate("/invoices")} className="text-primary hover:underline">Finance</button>
+          </p>
+        </div>
+        <button onClick={openNewForm} className="toolbar-btn-primary shrink-0"><Plus size={14} /> New Service Report</button>
       </div>
 
       {/* KPI Cards */}
