@@ -294,7 +294,7 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
             </table>
           </div>
 
-          {/* Timing & Flight Type Row */}
+          {/* Timing & Skd Type Row */}
           <div className="border rounded overflow-hidden">
             <table className="w-full text-sm">
               <tbody>
