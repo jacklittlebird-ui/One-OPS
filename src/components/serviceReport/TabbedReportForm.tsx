@@ -460,6 +460,7 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
               isLinked: !!data.id,
               reviewStatus: data.reviewStatus || "pending",
               clearanceStatus: clearanceStatus,
+              dispatchStatus: data.id ? "Completed" : "Pending",
             })}
           />
         </div>
