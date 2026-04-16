@@ -303,8 +303,17 @@ export default function ClearancesPage() {
         </TabsList>
 
         <TabsContent value="all">
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
-            <div className="relative flex-1"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} /><Input placeholder="Search flights…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="relative flex-1 min-w-[180px]"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={16} /><Input placeholder="Search flights…" className="pl-9" value={search} onChange={e => setSearch(e.target.value)} /></div>
+            <Select value={airlineFilter} onValueChange={setAirlineFilter}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Airlines" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Airlines</SelectItem>
+                {(airlines || []).slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).map((a: any) => (
+                  <SelectItem key={a.id} value={a.id}>{a.code ? `${a.code} – ${a.name}` : a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="all">All Types</SelectItem>{CLEARANCE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -325,61 +334,84 @@ export default function ClearancesPage() {
                 <SelectContent><SelectItem value="all">All Registrations</SelectItem>{registrations.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
               </Select>
             )}
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">From</label>
+              <Input type="date" className="w-36 h-9" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">To</label>
+              <Input type="date" className="w-36 h-9" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            </div>
+            <div className="flex border rounded-lg overflow-hidden ml-auto">
+              <Button variant={viewMode === "table" ? "default" : "ghost"} size="sm" className="rounded-none h-9 px-3" onClick={() => setViewMode("table")}><TableIcon size={14} className="mr-1" /> Table</Button>
+              <Button variant={viewMode === "calendar" ? "default" : "ghost"} size="sm" className="rounded-none h-9 px-3" onClick={() => setViewMode("calendar")}><CalendarDays size={14} className="mr-1" /> Calendar</Button>
+            </div>
           </div>
 
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Arrival Date</TableHead>
-                    <TableHead>Departure Date</TableHead>
-                    <TableHead>Flight</TableHead>
-                    <TableHead>Reg No</TableHead>
-                    <TableHead>A/C Type</TableHead>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Station</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>STA</TableHead>
-                    <TableHead>STD</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(c => {
-                    const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.Pending;
-                    const statusIcon = c.status === "Pending" ? <Clock size={12} /> : c.status === "Approved" ? <CheckCircle2 size={12} /> : c.status === "Rejected" ? <XCircle size={12} /> : <AlertTriangle size={12} />;
-                    return (
-                      <TableRow key={c.id}>
-                        <TableCell className="text-xs">{formatDateDMY(c.arrival_date)}</TableCell>
-                        <TableCell className="text-xs">{formatDateDMY(c.departure_date)}</TableCell>
-                        <TableCell className="font-medium font-mono">{c.flight_no}</TableCell>
-                        <TableCell className="text-xs font-mono">{c.registration || "—"}</TableCell>
-                        <TableCell className="text-xs">{c.aircraft_type || "—"}</TableCell>
-                        <TableCell>{c.airline_id ? (airlineMap[c.airline_id]?.code || "—") : "—"}</TableCell>
-                        <TableCell className="text-xs">{c.authority || "—"}</TableCell>
-                        <TableCell className="text-sm font-mono">{c.route || "—"}</TableCell>
-                        <TableCell className="text-xs">{c.sta || "—"}</TableCell>
-                        <TableCell className="text-xs">{c.std || "—"}</TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>{statusIcon}{c.status}</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => setDetailItem(c)}><Eye size={14} /></Button>
-                            <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil size={14} /></Button>
-                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(c.id)}><Trash2 size={14} /></Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {filtered.length === 0 && <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No flight schedules found</TableCell></TableRow>}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          {viewMode === "table" ? (
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Arrival Date</TableHead>
+                      <TableHead>Departure Date</TableHead>
+                      <TableHead>Flight</TableHead>
+                      <TableHead>Reg No</TableHead>
+                      <TableHead>A/C Type</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Station</TableHead>
+                      <TableHead>Route</TableHead>
+                      <TableHead>STA</TableHead>
+                      <TableHead>STD</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-24">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map(c => {
+                      const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.Pending;
+                      const statusIcon = c.status === "Pending" ? <Clock size={12} /> : c.status === "Approved" ? <CheckCircle2 size={12} /> : c.status === "Rejected" ? <XCircle size={12} /> : <AlertTriangle size={12} />;
+                      return (
+                        <TableRow key={c.id}>
+                          <TableCell className="text-xs">{formatDateDMY(c.arrival_date)}</TableCell>
+                          <TableCell className="text-xs">{formatDateDMY(c.departure_date)}</TableCell>
+                          <TableCell className="font-medium font-mono">{c.flight_no}</TableCell>
+                          <TableCell className="text-xs font-mono">{c.registration || "—"}</TableCell>
+                          <TableCell className="text-xs">{c.aircraft_type || "—"}</TableCell>
+                          <TableCell>{c.airline_id ? (airlineMap[c.airline_id]?.code || "—") : "—"}</TableCell>
+                          <TableCell className="text-xs">{c.authority || "—"}</TableCell>
+                          <TableCell className="text-sm font-mono">{c.route || "—"}</TableCell>
+                          <TableCell className="text-xs">{c.sta || "—"}</TableCell>
+                          <TableCell className="text-xs">{c.std || "—"}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>{statusIcon}{c.status}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button size="icon" variant="ghost" onClick={() => setDetailItem(c)}><Eye size={14} /></Button>
+                              <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil size={14} /></Button>
+                              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove(c.id)}><Trash2 size={14} /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filtered.length === 0 && <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No flight schedules found</TableCell></TableRow>}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ) : (
+            <CalendarView
+              flights={filtered}
+              month={calMonth}
+              onMonthChange={setCalMonth}
+              airlineMap={airlineMap}
+              onView={setDetailItem}
+              onEdit={openEdit}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="pending-approval">
