@@ -26,22 +26,22 @@ export function derivePipelineStage(opts: {
   const rs = opts.reviewStatus?.toLowerCase() || "";
   const ds = opts.dispatchStatus?.toLowerCase() || "";
 
-  // New reports start at clearance for approval
-  if (rs === "pending" || rs === "pending review" || rs === "draft") return "clearance";
+  // Ready for billing → receivables (step 4)
+  if (rs === "ready_for_billing" || rs === "ready for billing") return "receivables";
+
+  // Station has completed their task sheet → operations (step 3, steps 1-2 done)
+  // This applies regardless of review status — once the station saves the task
+  // sheet (status=Completed), the Security Service step is considered complete.
+  if (ds === "completed") return "operations";
 
   // Rejected → back to clearance
   if (rs === "rejected") return "clearance";
 
-  // Ready for billing → receivables (step 4)
-  if (rs === "ready_for_billing" || rs === "ready for billing") return "receivables";
+  // New reports start at clearance for approval
+  if (rs === "pending" || rs === "pending review" || rs === "draft") return "clearance";
 
-  // After clearance approval:
-  // If station has completed their work (status=Completed) → operations (step 3, steps 1-2 done)
-  // Otherwise → station (step 2, step 1 done)
-  if (rs === "approved") {
-    if (ds === "completed") return "operations";
-    return "station";
-  }
+  // After clearance approval but station not yet completed → station (step 2)
+  if (rs === "approved") return "station";
 
   // Fallback
   return "station";
