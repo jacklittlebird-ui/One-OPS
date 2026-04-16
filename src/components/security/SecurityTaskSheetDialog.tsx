@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Shield, Printer } from "lucide-react";
+import { Shield, Printer, Download } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
 
 interface TaskSheetData {
