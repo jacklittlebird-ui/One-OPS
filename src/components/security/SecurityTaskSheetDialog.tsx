@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Shield, Printer, Download } from "lucide-react";
+import { Shield, Printer, Download, Plane, Clock, Eye, Package, MessageSquare, UserCheck, AlertTriangle } from "lucide-react";
 import PipelineStepper, { derivePipelineStage } from "@/components/serviceReport/PipelineStepper";
 import { SKD_TYPES, SECURITY_CLEARANCE_TYPES } from "@/components/clearances/ClearanceTypes";
 import { Json } from "@/integrations/supabase/types";
@@ -113,9 +113,45 @@ interface Props {
 
 const FLIGHT_TYPES = SKD_TYPES;
 
-const inputCls = "text-sm border border-border rounded px-2.5 py-2 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground w-full";
-const readOnlyCls = "text-sm border border-border rounded px-2.5 py-2 bg-muted/50 text-foreground w-full cursor-default";
+const inputCls = "text-sm border border-border rounded-md px-2.5 py-2 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-muted-foreground w-full transition-colors";
+const readOnlyCls = "text-sm border border-border rounded-md px-2.5 py-2 bg-muted/50 text-foreground w-full cursor-default";
 const sectionHeaderCls = "bg-primary/10 text-primary font-bold text-sm px-3 py-2 rounded-t border border-primary/20";
+
+interface SectionProps {
+  title: string;
+  icon?: React.ReactNode;
+  accent?: string;
+  iconBg?: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}
+
+function Section({ title, icon, accent = "text-primary", iconBg = "bg-primary/10", children, right }: SectionProps) {
+  return (
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b bg-muted/30">
+        <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${accent}`}>
+          {icon && <span className={`h-6 w-6 rounded-md ${iconBg} flex items-center justify-center`}>{icon}</span>}
+          {title}
+        </h3>
+        {right}
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+function Chip({ icon, label, value, accent = "bg-white/15" }: { icon?: React.ReactNode; label: string; value: string; accent?: string }) {
+  return (
+    <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${accent} backdrop-blur-sm`}>
+      {icon && <span className="opacity-90">{icon}</span>}
+      <div className="flex flex-col leading-tight">
+        <span className="text-[10px] uppercase tracking-wider opacity-75">{label}</span>
+        <span className="text-xs font-semibold">{value || "—"}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function SecurityTaskSheetDialog({ row, onClose, onSave, registration, route, sta, std, ata, atd, skdType, serviceType, isNew }: Props) {
   const [sheet, setSheet] = useState<TaskSheetData>(emptyTaskSheet());
@@ -323,12 +359,33 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
 
   return (
     <Dialog open={!!row} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0">
-        {/* Title bar styled like the PDF header */}
-        <div className="bg-primary/5 border-b px-6 py-4">
-          <DialogTitle className="text-center text-lg font-bold uppercase tracking-wide text-foreground">
-            {isNew ? "NEW" : currentRow.airline} AIRLINES SECURITY TASK SHEET
-          </DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+        {/* Gradient hero header */}
+        <div className="relative bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground px-6 py-5 overflow-hidden">
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+          <div className="relative flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-bold uppercase tracking-wide leading-tight">
+                    {isNew ? "New" : currentRow.airline} Airlines Security Task Sheet
+                  </DialogTitle>
+                  <p className="text-[11px] uppercase tracking-widest opacity-80 mt-0.5">
+                    {isNew ? "Create new report" : "Edit report"} • {currentRow.station || "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Chip icon={<Plane size={13} />} label="Flight" value={currentRow.flight_no || "—"} />
+                <Chip icon={<Clock size={13} />} label="Date" value={formatDate(currentRow.flight_date)} />
+                <Chip label="Reg" value={sheet.registration || registration || "—"} />
+                <Chip label="Service" value={serviceType || currentRow.service_type || "—"} />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Pipeline stepper - hidden in print/download */}
@@ -342,255 +399,201 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
           />
         </div>
 
-        <div className="px-6 py-4 space-y-4" ref={printRef}>
+        <div className="px-6 py-4 space-y-4 bg-muted/10" ref={printRef}>
           {/* Airline & Station (editable for new) */}
           {isNew && (
-            <div className="border rounded overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/60">
-                    <th className="px-3 py-2 text-left font-semibold text-foreground border-r">Airline</th>
-                    <th className="px-3 py-2 text-left font-semibold text-foreground border-r">Station</th>
-                    <th className="px-3 py-2 text-left font-semibold text-foreground">Service Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="px-3 py-2 border-r">
-                      <select className={inputCls} value={editableRow.airline} onChange={e => updateRow("airline", e.target.value)}>
-                        <option value="">Select Airline</option>
-                        {airlines.map((a: any) => (
-                          <option key={a.id} value={a.name}>{a.name} ({a.iata_code || a.code})</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2 border-r"><input className={inputCls} value={editableRow.station} onChange={e => updateRow("station", e.target.value)} placeholder="CAI" /></td>
-                    <td className="px-3 py-2">
-                      <select className={inputCls} value={editableRow.service_type} onChange={e => updateRow("service_type", e.target.value)}>
-                        {SECURITY_CLEARANCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <Section title="Assignment" icon={<Plane size={14} />} accent="text-primary" iconBg="bg-primary/10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Airline</label>
+                  <select className={inputCls} value={editableRow.airline} onChange={e => updateRow("airline", e.target.value)}>
+                    <option value="">Select Airline</option>
+                    {airlines.map((a: any) => (
+                      <option key={a.id} value={a.name}>{a.name} ({a.iata_code || a.code})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Station</label>
+                  <input className={inputCls} value={editableRow.station} onChange={e => updateRow("station", e.target.value)} placeholder="CAI" />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Service Type</label>
+                  <select className={inputCls} value={editableRow.service_type} onChange={e => updateRow("service_type", e.target.value)}>
+                    {SECURITY_CLEARANCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+            </Section>
           )}
 
-          {/* Flight Info Table */}
-          <div className="border rounded overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/60">
-                  <th className="px-3 py-2 text-left font-semibold text-foreground border-r">Flight Number</th>
-                  <th className="px-3 py-2 text-left font-semibold text-foreground border-r">Date</th>
-                  <th className="px-3 py-2 text-left font-semibold text-foreground border-r">Registration</th>
-                  <th className="px-3 py-2 text-left font-semibold text-foreground">Route</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {isNew ? (
-                    <>
-                       <td className="px-3 py-2 border-r"><input className={inputCls} value={editableRow.flight_no} onChange={e => updateRow("flight_no", e.target.value.toUpperCase())} placeholder="Flight No" /></td>
-                       <td className="px-3 py-2 border-r"><input className={inputCls} type="date" value={editableRow.flight_date} onChange={e => updateRow("flight_date", e.target.value)} /></td>
-                       <td className="px-3 py-2 border-r"><input className={inputCls} value={sheet.registration} onChange={e => update("registration", e.target.value.toUpperCase())} placeholder="Registration" /></td>
-                       <td className="px-3 py-2"><input className={inputCls} value={sheet.route} onChange={e => update("route", e.target.value.toUpperCase())} placeholder="e.g. CAI-JFK-CAI" /></td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-3 py-2 font-bold text-foreground border-r">{currentRow.flight_no}</td>
-                      <td className="px-3 py-2 text-foreground border-r">{formatDate(currentRow.flight_date)}</td>
-                      <td className="px-3 py-2 font-mono text-foreground border-r">{sheet.registration || registration || "—"}</td>
-                      <td className="px-3 py-2 text-foreground">{sheet.route || route || "—"}</td>
-                    </>
-                  )}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {/* Flight Info */}
+          <Section title="Flight Information" icon={<Plane size={14} />} accent="text-primary" iconBg="bg-primary/10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Flight No</label>
+                {isNew ? (
+                  <input className={inputCls} value={editableRow.flight_no} onChange={e => updateRow("flight_no", e.target.value.toUpperCase())} placeholder="Flight No" />
+                ) : (
+                  <div className="text-sm font-bold text-foreground py-2">{currentRow.flight_no}</div>
+                )}
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Date</label>
+                {isNew ? (
+                  <input className={inputCls} type="date" value={editableRow.flight_date} onChange={e => updateRow("flight_date", e.target.value)} />
+                ) : (
+                  <div className="text-sm text-foreground py-2">{formatDate(currentRow.flight_date)}</div>
+                )}
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Registration</label>
+                <input className={inputCls + " font-mono uppercase"} value={sheet.registration} onChange={e => update("registration", e.target.value.toUpperCase())} placeholder="Registration" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Route</label>
+                <input className={inputCls + " uppercase"} value={sheet.route} onChange={e => update("route", e.target.value.toUpperCase())} placeholder="CAI-JFK-CAI" />
+              </div>
+            </div>
+          </Section>
 
-          {/* Timing & Skd Type Row */}
-          <div className="border rounded overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody>
-                <tr className="border-b">
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">STA</td>
-                  <td className="px-3 py-2 text-foreground border-r w-20 font-mono">
-                    <input className={inputCls} value={sheet.sta} onChange={e => update("sta", formatTimeInput(e.target.value, sheet.sta))} placeholder="HH:MM" maxLength={5} />
-                  </td>
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">ATA</td>
-                  <td className="px-3 py-2 text-foreground border-r w-20 font-mono">
-                    <input className={inputCls} value={sheet.ata} onChange={e => update("ata", formatTimeInput(e.target.value, sheet.ata))} placeholder="HH:MM" maxLength={5} />
-                  </td>
-                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-24">Skd Type</td>
-                   <td className="px-3 py-2">
-                     {isNew ? (
-                       <select className={inputCls} value={sheet.flight_type} onChange={e => update("flight_type", e.target.value)}>
-                         <option value="">Select...</option>
-                         {FLIGHT_TYPES.map(ft => <option key={ft} value={ft}>{ft}</option>)}
-                       </select>
-                     ) : (
-                       <span className="text-xs font-semibold text-foreground">{skdType || sheet.flight_type || "—"}</span>
-                     )}
-                   </td>
-                </tr>
-                 <tr className="border-b">
-                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">STD</td>
-                   <td className="px-3 py-2 text-foreground border-r font-mono">
-                     <input className={inputCls} value={sheet.std} onChange={e => update("std", formatTimeInput(e.target.value, sheet.std))} placeholder="HH:MM" maxLength={5} />
-                   </td>
-                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">ATD</td>
-                   <td className="px-3 py-2 text-foreground border-r font-mono">
-                     <input className={inputCls} value={sheet.atd} onChange={e => update("atd", formatTimeInput(e.target.value, sheet.atd))} placeholder="HH:MM" maxLength={5} />
-                   </td>
-                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">Service Type</td>
-                   <td className="px-3 py-2">
-                     <span className="text-xs font-semibold text-foreground">{serviceType || currentRow.service_type || "—"}</span>
-                   </td>
-                 </tr>
-                 <tr className="border-b">
-                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40" colSpan={2}></td>
-                   <td className="px-3 py-2 border-r" colSpan={2}></td>
-                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">Delay</td>
-                   <td className="px-3 py-2">
-                     <input
-                       className={inputCls}
-                       value={sheet.delay}
-                       onChange={e => update("delay", e.target.value)}
-                       placeholder="Delay info"
-                     />
-                   </td>
-                 </tr>
-                <tr>
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40" colSpan={2}>ARR/DEP SHIFT START</td>
-                  <td className="px-3 py-2 border-r" colSpan={2}>
-                    <input
-                       className={inputCls}
-                       value={sheet.shift_start}
-                       onChange={e => update("shift_start", formatTimeInput(e.target.value, sheet.shift_start))}
-                      placeholder="HH:MM"
-                      maxLength={5}
-                    />
-                  </td>
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">ARR/DEP SHIFT END</td>
-                  <td className="px-3 py-2">
-                    <input
-                      className={inputCls}
-                      value={sheet.shift_end}
-                      onChange={e => update("shift_end", formatTimeInput(e.target.value, sheet.shift_end))}
-                      placeholder="HH:MM"
-                      maxLength={5}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {/* Timings */}
+          <Section title="Timings & Schedule" icon={<Clock size={14} />} accent="text-info" iconBg="bg-info/10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">STA</label>
+                <input className={inputCls + " font-mono"} value={sheet.sta} onChange={e => update("sta", formatTimeInput(e.target.value, sheet.sta))} placeholder="HH:MM" maxLength={5} />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">ATA</label>
+                <input className={inputCls + " font-mono"} value={sheet.ata} onChange={e => update("ata", formatTimeInput(e.target.value, sheet.ata))} placeholder="HH:MM" maxLength={5} />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">STD</label>
+                <input className={inputCls + " font-mono"} value={sheet.std} onChange={e => update("std", formatTimeInput(e.target.value, sheet.std))} placeholder="HH:MM" maxLength={5} />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">ATD</label>
+                <input className={inputCls + " font-mono"} value={sheet.atd} onChange={e => update("atd", formatTimeInput(e.target.value, sheet.atd))} placeholder="HH:MM" maxLength={5} />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Skd Type</label>
+                {isNew ? (
+                  <select className={inputCls} value={sheet.flight_type} onChange={e => update("flight_type", e.target.value)}>
+                    <option value="">Select...</option>
+                    {FLIGHT_TYPES.map(ft => <option key={ft} value={ft}>{ft}</option>)}
+                  </select>
+                ) : (
+                  <div className="text-sm font-semibold text-foreground py-2">{skdType || sheet.flight_type || "—"}</div>
+                )}
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Service Type</label>
+                <div className="text-sm font-semibold text-foreground py-2 whitespace-nowrap">{serviceType || currentRow.service_type || "—"}</div>
+              </div>
+              <div className="col-span-2">
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Delay</label>
+                <input className={inputCls} value={sheet.delay} onChange={e => update("delay", e.target.value)} placeholder="Delay info" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t">
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">ARR/DEP Shift Start</label>
+                <input className={inputCls + " font-mono"} value={sheet.shift_start} onChange={e => update("shift_start", formatTimeInput(e.target.value, sheet.shift_start))} placeholder="HH:MM" maxLength={5} />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">ARR/DEP Shift End</label>
+                <input className={inputCls + " font-mono"} value={sheet.shift_end} onChange={e => update("shift_end", formatTimeInput(e.target.value, sheet.shift_end))} placeholder="HH:MM" maxLength={5} />
+              </div>
+            </div>
+          </Section>
 
-          {/* Observer Sections */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Cargo Observer */}
-            <ObserverSection
-              title="Cargo Observer"
-              fields={[
-                { label: "1", value: sheet.cargo_observer_1, onChange: v => update("cargo_observer_1", v) },
-                { label: "2", value: sheet.cargo_observer_2, onChange: v => update("cargo_observer_2", v) },
-              ]}
-            />
-            {/* Hold Baggage Observer */}
-            <ObserverSection
-              title="Hold Baggage Observer"
-              fields={[
-                { label: "1", value: sheet.hold_baggage_observer_1, onChange: v => update("hold_baggage_observer_1", v) },
-                { label: "2", value: sheet.hold_baggage_observer_2, onChange: v => update("hold_baggage_observer_2", v) },
-              ]}
-            />
-            {/* Gate Door Observer */}
-            <ObserverSection
-              title="Gate Door Observer"
-              fields={[
-                { label: "1", value: sheet.gate_door_observer_1, onChange: v => update("gate_door_observer_1", v) },
-              ]}
-            />
-            {/* Aircraft Door Observer */}
-            <ObserverSection
-              title="Aircraft Door Observer"
-              fields={[
-                { label: "1", value: sheet.aircraft_door_observer_1, onChange: v => update("aircraft_door_observer_1", v) },
-                { label: "2", value: sheet.aircraft_door_observer_2, onChange: v => update("aircraft_door_observer_2", v) },
-              ]}
-            />
-            {/* Aircraft Ramp Observer */}
-            <ObserverSection
-              title="Aircraft Ramp Observer"
-              fields={[
-                { label: "1", value: sheet.aircraft_ramp_observer_1, onChange: v => update("aircraft_ramp_observer_1", v) },
-              ]}
-            />
-          </div>
+          {/* Observers */}
+          <Section title="Security Observers" icon={<Eye size={14} />} accent="text-success" iconBg="bg-success/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <ObserverSection
+                title="Cargo Observer"
+                fields={[
+                  { label: "1", value: sheet.cargo_observer_1, onChange: v => update("cargo_observer_1", v) },
+                  { label: "2", value: sheet.cargo_observer_2, onChange: v => update("cargo_observer_2", v) },
+                ]}
+              />
+              <ObserverSection
+                title="Hold Baggage Observer"
+                fields={[
+                  { label: "1", value: sheet.hold_baggage_observer_1, onChange: v => update("hold_baggage_observer_1", v) },
+                  { label: "2", value: sheet.hold_baggage_observer_2, onChange: v => update("hold_baggage_observer_2", v) },
+                ]}
+              />
+              <ObserverSection
+                title="Gate Door Observer"
+                fields={[
+                  { label: "1", value: sheet.gate_door_observer_1, onChange: v => update("gate_door_observer_1", v) },
+                ]}
+              />
+              <ObserverSection
+                title="Aircraft Door Observer"
+                fields={[
+                  { label: "1", value: sheet.aircraft_door_observer_1, onChange: v => update("aircraft_door_observer_1", v) },
+                  { label: "2", value: sheet.aircraft_door_observer_2, onChange: v => update("aircraft_door_observer_2", v) },
+                ]}
+              />
+              <ObserverSection
+                title="Aircraft Ramp Observer"
+                fields={[
+                  { label: "1", value: sheet.aircraft_ramp_observer_1, onChange: v => update("aircraft_ramp_observer_1", v) },
+                ]}
+              />
+            </div>
+          </Section>
 
-          {/* Cargo, Baggage & Catering Accompanied By */}
-          <div className="border rounded overflow-hidden">
-            <div className={sectionHeaderCls}>CARGO AND BAGGAGE & CATERING ACCOMPANIED BY:</div>
-            <table className="w-full text-sm">
-              <tbody>
-                <tr className="border-b">
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-28">Catering</td>
-                  <td className="px-3 py-2">
-                    <input className={inputCls} value={sheet.catering_accompanied} onChange={e => update("catering_accompanied", e.target.value)} placeholder="Name" />
-                  </td>
-                </tr>
-                <tr className="border-b">
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">Cargo</td>
-                  <td className="px-3 py-2">
-                    <input className={inputCls} value={sheet.cargo_accompanied} onChange={e => update("cargo_accompanied", e.target.value)} placeholder="Name or NIL" />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40">Baggage</td>
-                  <td className="px-3 py-2">
-                    <input className={inputCls} value={sheet.baggage_accompanied} onChange={e => update("baggage_accompanied", e.target.value)} placeholder="Name" />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {/* Accompanied By */}
+          <Section title="Cargo, Baggage & Catering Accompanied By" icon={<Package size={14} />} accent="text-accent-foreground" iconBg="bg-accent">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Catering</label>
+                <input className={inputCls} value={sheet.catering_accompanied} onChange={e => update("catering_accompanied", e.target.value)} placeholder="Name" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Cargo</label>
+                <input className={inputCls} value={sheet.cargo_accompanied} onChange={e => update("cargo_accompanied", e.target.value)} placeholder="Name or NIL" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">Baggage</label>
+                <input className={inputCls} value={sheet.baggage_accompanied} onChange={e => update("baggage_accompanied", e.target.value)} placeholder="Name" />
+              </div>
+            </div>
+          </Section>
 
           {/* Remarks */}
-          <div className="border rounded overflow-hidden">
-            <div className={sectionHeaderCls}>REMARKS</div>
-            <div className="p-3">
-              <textarea
-                className={inputCls + " min-h-[60px]"}
-                value={sheet.remarks}
-                onChange={e => update("remarks", e.target.value)}
-                placeholder="Enter any remarks, incidents, or notes…"
-              />
-            </div>
-          </div>
+          <Section title="Remarks" icon={<MessageSquare size={14} />} accent="text-warning" iconBg="bg-warning/10">
+            <textarea
+              className={inputCls + " min-h-[80px]"}
+              value={sheet.remarks}
+              onChange={e => update("remarks", e.target.value)}
+              placeholder="Enter any remarks, incidents, or notes…"
+            />
+          </Section>
 
           {/* Security Supervisor */}
-          <div className="border rounded overflow-hidden">
-            <div className={sectionHeaderCls}>{currentRow.airline.toUpperCase()} (SECURITY SUPERVISOR ON-DUTY)</div>
-            <div className="p-3">
-              <input
-                className={inputCls}
-                value={sheet.security_supervisor}
-                onChange={e => update("security_supervisor", e.target.value)}
-                placeholder="Supervisor name"
-              />
-            </div>
-          </div>
+          <Section title={`${currentRow.airline.toUpperCase()} — Security Supervisor on Duty`} icon={<UserCheck size={14} />} accent="text-primary" iconBg="bg-primary/10">
+            <input
+              className={inputCls}
+              value={sheet.security_supervisor}
+              onChange={e => update("security_supervisor", e.target.value)}
+              placeholder="Supervisor name"
+            />
+          </Section>
 
           {/* Footer matching the PDF */}
-          <div className="flex justify-between items-center text-xs text-muted-foreground pt-3 border-t">
-            <span>{currentRow.airline} Security Task Sheet</span>
-            <span>V.03 22Jan2023</span>
+          <div className="flex justify-between items-center text-[11px] text-muted-foreground pt-3 border-t">
+            <span className="flex items-center gap-1.5"><Shield size={12} /> {currentRow.airline} Security Task Sheet</span>
+            <span className="font-mono">V.03 22Jan2023</span>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-between items-center gap-2 px-6 pb-4">
+        {/* Sticky action bar */}
+        <div className="sticky bottom-0 flex flex-wrap justify-between items-center gap-2 px-6 py-3 border-t bg-card/95 backdrop-blur-sm">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer size={14} className="mr-1" /> Print
@@ -601,7 +604,9 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave}>Save Task Sheet</Button>
+            <Button onClick={handleSave} className="shadow-sm">
+              <Shield size={14} className="mr-1" /> Save Task Sheet
+            </Button>
           </div>
         </div>
       </DialogContent>
@@ -610,22 +615,20 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
 }
 
 function ObserverSection({ title, fields }: { title: string; fields: { label: string; value: string; onChange: (v: string) => void }[] }) {
-  const inputCls = "text-sm border border-border rounded px-2.5 py-2 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground w-full";
+  const inputCls = "text-sm border border-border rounded-md px-2.5 py-1.5 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary placeholder:text-muted-foreground w-full transition-colors";
   return (
-    <div className="border rounded overflow-hidden">
-      <div className="bg-primary/10 text-primary font-bold text-sm px-3 py-2 border-b border-primary/20">{title}</div>
-      <table className="w-full text-sm">
-        <tbody>
-          {fields.map(f => (
-            <tr key={f.label} className="border-b last:border-0">
-              <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-10 text-center">{f.label}</td>
-              <td className="px-3 py-2">
-                <input className={inputCls} value={f.value} onChange={e => f.onChange(e.target.value)} placeholder="Name or NIL" />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="border rounded-lg overflow-hidden bg-card">
+      <div className="bg-success/10 text-success font-semibold text-xs uppercase tracking-wider px-3 py-2 border-b border-success/20 flex items-center gap-1.5">
+        <Eye size={12} /> {title}
+      </div>
+      <div className="p-2 space-y-1.5">
+        {fields.map(f => (
+          <div key={f.label} className="flex items-center gap-2">
+            <span className="h-7 w-7 rounded-md bg-muted text-foreground text-xs font-bold flex items-center justify-center shrink-0">{f.label}</span>
+            <input className={inputCls} value={f.value} onChange={e => f.onChange(e.target.value)} placeholder="Name or NIL" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
