@@ -191,7 +191,7 @@ export default function ClearancesPage() {
     return categoryMatch && ms && mst && mt && mstation && mreg && mairline && mdf && mdt;
   });
 
-  const pendingApproval = data.filter(c => c.status === "Pending" && c.remarks?.includes("Added from Station Dispatch"));
+  const pendingApproval = data.filter(c => c.status === "Pending" && (c.remarks?.includes("Added from Station Dispatch") || c.remarks?.includes("Added from Security Service")));
 
   const stats = {
     total: data.length,
