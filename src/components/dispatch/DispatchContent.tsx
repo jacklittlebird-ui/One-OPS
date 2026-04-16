@@ -354,13 +354,15 @@ export default function DispatchContent({ serviceCategory }: DispatchContentProp
   const updateFormField = (key: string, val: any) => {
     const updated = { ...formData, [key]: val };
     if (key === "actual_start" || key === "actual_end") {
-      const actualHrs = calcDurationHours(updated.actual_start || "", updated.actual_end || "");
+      const actualMins = calcDurationMinutes(updated.actual_start || "", updated.actual_end || "");
       const contractHrs = updated.contract_duration_hours || 0;
-      const overtime = Math.max(0, actualHrs - contractHrs);
-      const overtimeCharge = overtime * (updated.overtime_rate || 0) * (updated.staff_count || 1);
+      const contractMins = Math.round(contractHrs * 60);
+      const overtimeMins = Math.max(0, actualMins - contractMins);
+      const overtimeDecimalHrs = overtimeMins / 60;
+      const overtimeCharge = overtimeDecimalHrs * (updated.overtime_rate || 0) * (updated.staff_count || 1);
       const total = (updated.base_fee || 0) + (updated.service_rate || 0) + overtimeCharge;
-      updated.actual_duration_hours = actualHrs;
-      updated.overtime_hours = overtime;
+      updated.actual_duration_hours = minutesToHMM(actualMins);
+      updated.overtime_hours = minutesToHMM(overtimeMins);
       updated.overtime_charge = Math.round(overtimeCharge * 100) / 100;
       updated.total_charge = Math.round(total * 100) / 100;
     }
