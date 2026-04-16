@@ -743,6 +743,8 @@ function HandlingServiceReportContent() {
         {viewMode === "calendar" ? (
           <ServiceReportCalendarView reports={filtered} month={calMonth} onMonthChange={setCalMonth} onEdit={startEdit} />
         ) : (
+        <>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr>
