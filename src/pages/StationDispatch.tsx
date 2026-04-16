@@ -368,6 +368,10 @@ export default function StationDispatchPage() {
           <input type="text" placeholder="Search…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             className="pl-8 pr-3 py-1.5 text-sm border rounded bg-card text-foreground placeholder:text-muted-foreground w-48 focus:outline-none focus:ring-1 focus:ring-primary" />
         </div>
+        <div className="flex border rounded-lg overflow-hidden">
+          <button onClick={() => setViewMode("table")} className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "table" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted"}`}><TableIcon size={13} /> Table</button>
+          <button onClick={() => setViewMode("calendar")} className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "calendar" ? "bg-primary text-primary-foreground" : "bg-card text-foreground hover:bg-muted"}`}><CalendarDays size={13} /> Calendar</button>
+        </div>
         <button onClick={openNewManual} className="toolbar-btn-primary ml-auto"><Plus size={14} /> New Dispatch</button>
       </div>
 
