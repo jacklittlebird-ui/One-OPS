@@ -321,7 +321,7 @@ export default function StationDispatchPage() {
       airline: "",
       flight_no: "",
       flight_date: dateFrom,
-      service_type: "Arrival",
+      service_type: serviceCategory === "security" ? "Arrival Security" : "Arrival",
       staff_names: "",
       staff_count: 0,
       scheduled_start: "",
