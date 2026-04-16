@@ -545,7 +545,7 @@ export default function SecurityServiceReportsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    {["#", "AIRLINE", "FLIGHT NO", "ROUTE", "A/C TYPE", "REG", "SERVICE TYPE", "ARR DATE", "STA", "DEP DATE", "STD", "STATUS"].map(h => (
+                     {["#", "AIRLINE", "FLIGHT NO", "ROUTE", "A/C TYPE", "REG", "SERVICE TYPE", "SKD TYPE", "ARR DATE", "STA", "DEP DATE", "STD", "STATUS"].map(h => (
                       <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -553,7 +553,7 @@ export default function SecurityServiceReportsPage() {
                 <tbody>
                   {filteredFlights.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="text-center py-16">
+                      <td colSpan={13} className="text-center py-16">
                         <CalendarDays size={40} className="mx-auto text-muted-foreground/30 mb-3" />
                         <p className="font-semibold text-foreground">No Security Flights</p>
                         <p className="text-muted-foreground text-sm mt-1">
