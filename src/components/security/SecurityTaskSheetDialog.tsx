@@ -132,18 +132,25 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
       if (saved && typeof saved === "object") {
         const restored = { ...emptyTaskSheet(), ...saved } as TaskSheetData;
         if (!restored.flight_type && skdType) restored.flight_type = skdType;
+        // Populate sta/std from props if not already saved
+        if (!restored.sta && sta) restored.sta = sta;
+        if (!restored.std && std) restored.std = std;
+        if (!restored.ata && ata) restored.ata = ata;
+        if (!restored.atd && atd) restored.atd = atd;
         setSheet(restored);
       } else {
         setSheet({
           ...emptyTaskSheet(),
           flight_type: skdType || "",
-          shift_start: row.actual_start || row.scheduled_start || "",
-          shift_end: row.actual_end || row.scheduled_end || "",
+          sta: sta || "",
+          std: std || "",
+          ata: ata || "",
+          atd: atd || "",
           remarks: row.notes || "",
         });
       }
     }
-  }, [row, skdType]);
+  }, [row, skdType, sta, std, ata, atd]);
 
   if (!row || !editableRow) return null;
 
