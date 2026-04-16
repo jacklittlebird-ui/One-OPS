@@ -130,6 +130,13 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{isEdit ? "Edit Flight Schedule" : "New Flight Schedule"}</DialogTitle></DialogHeader>
         <div className="space-y-4">
+          {/* Service Category Tabs */}
+          <Tabs value={serviceTab} onValueChange={(v) => handleCategoryChange(v as ServiceCategory)}>
+            <TabsList className="w-full">
+              <TabsTrigger value="handling" className="flex-1">Handling</TabsTrigger>
+              <TabsTrigger value="security" className="flex-1">Security</TabsTrigger>
+            </TabsList>
+          </Tabs>
           {/* Account & Station */}
           <div className="grid grid-cols-2 gap-3">
             <div>
