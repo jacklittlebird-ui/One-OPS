@@ -94,16 +94,17 @@ const inputCls = "text-sm border border-border rounded px-2.5 py-2 bg-card text-
 const readOnlyCls = "text-sm border border-border rounded px-2.5 py-2 bg-muted/50 text-foreground w-full cursor-default";
 const sectionHeaderCls = "bg-primary/10 text-primary font-bold text-sm px-3 py-2 rounded-t border border-primary/20";
 
-export default function SecurityTaskSheetDialog({ row, onClose, onSave, registration, route, sta, std, ata, atd, skdType, serviceType }: Props) {
+export default function SecurityTaskSheetDialog({ row, onClose, onSave, registration, route, sta, std, ata, atd, skdType, serviceType, isNew }: Props) {
   const [sheet, setSheet] = useState<TaskSheetData>(emptyTaskSheet());
+  const [editableRow, setEditableRow] = useState<DispatchRow | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (row) {
+      setEditableRow({ ...row });
       const saved = row.task_sheet_data as Record<string, any> | null;
       if (saved && typeof saved === "object") {
         const restored = { ...emptyTaskSheet(), ...saved } as TaskSheetData;
-        // If skdType from flight schedule and not already saved, use it
         if (!restored.flight_type && skdType) restored.flight_type = skdType;
         setSheet(restored);
       } else {
@@ -118,7 +119,13 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
     }
   }, [row, skdType]);
 
-  if (!row) return null;
+  if (!row || !editableRow) return null;
+
+  const currentRow = isNew ? editableRow : row;
+
+  const updateRow = (field: string, value: any) => {
+    setEditableRow(prev => prev ? { ...prev, [field]: value } : prev);
+  };
 
   const update = (field: keyof TaskSheetData, value: string) => {
     setSheet(prev => ({ ...prev, [field]: value }));
