@@ -99,13 +99,24 @@ const statusColors: Record<string, string> = {
 const inputCls = "text-sm border rounded px-2 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground w-full";
 const selectCls = "text-sm border rounded px-2 py-1.5 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full";
 
-function calcDurationHours(start: string, end: string): number {
+// Returns duration in minutes between two HH:MM strings (handles wraparound)
+function calcDurationMinutes(start: string, end: string): number {
   if (!start || !end) return 0;
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
   let mins = (eh * 60 + em) - (sh * 60 + sm);
   if (mins < 0) mins += 1440;
-  return Math.round((mins / 60) * 100) / 100;
+  return mins;
+}
+// Format minutes as H.MM (hours.minutes) — e.g. 124min → 2.04
+function minutesToHMM(mins: number): number {
+  if (!mins || mins < 0) return 0;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return Math.round((h + m / 100) * 100) / 100;
+}
+function calcDurationHours(start: string, end: string): number {
+  return minutesToHMM(calcDurationMinutes(start, end));
 }
 
 // ─── Dispatch Calendar View ───
@@ -354,13 +365,17 @@ export default function StationDispatchPage() {
   const updateFormField = (key: string, val: any) => {
     const updated = { ...formData, [key]: val };
     if (key === "actual_start" || key === "actual_end") {
-      const actualHrs = calcDurationHours(updated.actual_start || "", updated.actual_end || "");
+      const actualMins = calcDurationMinutes(updated.actual_start || "", updated.actual_end || "");
       const contractHrs = updated.contract_duration_hours || 0;
-      const overtime = Math.max(0, actualHrs - contractHrs);
-      const overtimeCharge = overtime * (updated.overtime_rate || 0) * (updated.staff_count || 1);
+      // contractHrs is stored as decimal hours (e.g. 2.5 = 2h30m)
+      const contractMins = Math.round(contractHrs * 60);
+      const overtimeMins = Math.max(0, actualMins - contractMins);
+      // Overtime charge uses true decimal hours for accurate billing
+      const overtimeDecimalHrs = overtimeMins / 60;
+      const overtimeCharge = overtimeDecimalHrs * (updated.overtime_rate || 0) * (updated.staff_count || 1);
       const total = (updated.base_fee || 0) + (updated.service_rate || 0) + overtimeCharge;
-      updated.actual_duration_hours = actualHrs;
-      updated.overtime_hours = overtime;
+      updated.actual_duration_hours = minutesToHMM(actualMins);
+      updated.overtime_hours = minutesToHMM(overtimeMins);
       updated.overtime_charge = Math.round(overtimeCharge * 100) / 100;
       updated.total_charge = Math.round(total * 100) / 100;
     }
