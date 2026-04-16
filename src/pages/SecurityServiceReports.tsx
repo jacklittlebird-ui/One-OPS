@@ -32,7 +32,7 @@ const reviewStatusConfig: Record<string, { icon: React.ReactNode; cls: string }>
 
 const dispatchStatusConfig: Record<string, string> = {
   "Pending": "bg-muted text-muted-foreground",
-  "Dispatched": "bg-info/15 text-info",
+  "In Progress": "bg-info/15 text-info",
   "Completed": "bg-success/15 text-success",
 };
 
@@ -379,7 +379,7 @@ export default function SecurityServiceReportsPage() {
       "Service Rate": r.service_rate,
       "Overtime Charge": r.overtime_charge,
       "Total Charge": r.total_charge,
-      "Dispatch Status": r.status,
+      "Status": r.status,
       "Review Status": r.review_status,
       "Notes": r.notes,
     })));
@@ -510,11 +510,11 @@ export default function SecurityServiceReportsPage() {
                   {isLoading ? (
                     <tr><td colSpan={15} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
                   ) : pageData.length === 0 ? (
-                    <tr>
+                     <tr>
                       <td colSpan={15} className="text-center py-16">
                         <Shield size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-                        <p className="font-semibold text-foreground">No Service Reports</p>
-                        <p className="text-muted-foreground text-sm mt-1">Dispatched flights will appear here as service reports</p>
+                        <p className="font-semibold text-foreground">No Security Service Reports</p>
+                        <p className="text-muted-foreground text-sm mt-1">Security service reports will appear here once created</p>
                       </td>
                     </tr>
                   ) : pageData.map((r, i) => {
