@@ -214,6 +214,8 @@ interface MergedRow extends ReportFormData {
   flightScheduleId?: string;
   sourceType?: "flight_schedules" | "clearances";
   clearanceStatus?: string;
+  skdType?: string;
+  serviceType?: string;
 }
 
 interface ScheduleSourceRow {
@@ -229,6 +231,8 @@ interface ScheduleSourceRow {
   arrivalDate: string;
   departureDate: string;
   clearanceStatus: string;
+  skdType: string;
+  serviceType: string;
 }
 
 function resolveStationFromRoute(route: string) {
@@ -355,7 +359,7 @@ function HandlingServiceReportContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("flight_schedules")
-        .select("id, flight_no, aircraft_type, route, sta, std, airline_id, handling_agent, arrival_date, departure_date, status, authority")
+        .select("id, flight_no, aircraft_type, route, sta, std, airline_id, handling_agent, arrival_date, departure_date, status, authority, skd_type, clearance_type")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -401,6 +405,8 @@ function HandlingServiceReportContent() {
           arrivalDate: c.arrival_date || "",
           departureDate: c.departure_date || "",
           clearanceStatus: c.status || "Pending",
+          skdType: c.skd_type || "",
+          serviceType: c.clearance_type || "",
         };
       });
   }, [dbFlights, airlineById]);
@@ -429,6 +435,8 @@ function HandlingServiceReportContent() {
             flightScheduleId: source.id,
             sourceType: source.sourceType,
             clearanceStatus: source.clearanceStatus,
+            skdType: source.skdType,
+            serviceType: source.serviceType,
           });
         });
         return;
@@ -455,6 +463,8 @@ function HandlingServiceReportContent() {
         flightScheduleId: source.id,
         sourceType: source.sourceType,
         clearanceStatus: source.clearanceStatus,
+        skdType: source.skdType,
+        serviceType: source.serviceType,
       });
     });
 
@@ -825,17 +835,17 @@ function HandlingServiceReportContent() {
           <table className="w-full text-sm">
             <thead>
               <tr>
-                {["#", "OPERATOR", "FLIGHT", "TYPE", "STATION", "ROUTE", "ARR DATE", "A/C TYPE", "MTOW", "D/N", "PAX IN", "DLY", "TOTAL ($)", "PIPELINE", "ACTIONS"].map(h => (
+                {["#", "OPERATOR", "FLIGHT", "TYPE", "SKD TYPE", "SERVICE TYPE", "STATION", "ROUTE", "ARR DATE", "A/C TYPE", "MTOW", "D/N", "PAX IN", "DLY", "TOTAL ($)", "PIPELINE", "ACTIONS"].map(h => (
                   <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={15} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={17} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
               ) : pageData.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="text-center py-16">
+                  <td colSpan={17} className="text-center py-16">
                     <FileBarChart2 size={40} className="mx-auto text-muted-foreground/30 mb-3" />
                     <p className="font-semibold text-foreground">No Service Reports Found</p>
                     <p className="text-muted-foreground text-sm mt-1">Add a new report or upload an Excel file</p>
@@ -855,6 +865,8 @@ function HandlingServiceReportContent() {
                       <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground">—</span>
                     )}
                   </td>
+                  <td className="px-3 py-2.5 text-foreground text-xs">{r.skdType || "—"}</td>
+                  <td className="px-3 py-2.5 text-foreground text-xs">{r.serviceType || "—"}</td>
                   <td className="px-3 py-2.5 text-foreground">{r.isLinked ? r.station : "—"}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{r.route}</td>
                   <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.arrivalDate || "—"}</td>

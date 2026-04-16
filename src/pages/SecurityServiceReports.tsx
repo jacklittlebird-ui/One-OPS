@@ -169,7 +169,7 @@ export default function SecurityServiceReportsPage() {
 
   // Build lookup for flight schedule details (registration, route, sta, std)
   const flightDetailsById = useMemo(() => {
-    const map = new Map<string, { registration: string; route: string; sta: string; std: string; ata: string; atd: string }>();
+    const map = new Map<string, { registration: string; route: string; sta: string; std: string; ata: string; atd: string; skd_type: string; clearance_type: string }>();
     securityFlights.forEach((f: any) => map.set(f.id, {
       registration: f.registration || "",
       route: f.route || "",
@@ -177,6 +177,8 @@ export default function SecurityServiceReportsPage() {
       std: f.std || "",
       ata: "",
       atd: "",
+      skd_type: f.skd_type || "",
+      clearance_type: f.clearance_type || "",
     }));
     return map;
   }, [securityFlights]);
@@ -424,17 +426,17 @@ export default function SecurityServiceReportsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    {["#", "STATION", "AIRLINE", "FLIGHT", "DATE", "TYPE", "STAFF", "ACTUAL TIME", "DURATION", "OT (h)", "CHARGE ($)", "STATUS", "PIPELINE", "ACTIONS"].map(h => (
+                     {["#", "STATION", "AIRLINE", "FLIGHT", "DATE", "TYPE", "SKD TYPE", "STAFF", "ACTUAL TIME", "DURATION", "OT (h)", "CHARGE ($)", "STATUS", "PIPELINE", "ACTIONS"].map(h => (
                       <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan={14} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
+                    <tr><td colSpan={15} className="text-center py-16 text-muted-foreground">Loading…</td></tr>
                   ) : pageData.length === 0 ? (
                     <tr>
-                      <td colSpan={14} className="text-center py-16">
+                      <td colSpan={15} className="text-center py-16">
                         <Shield size={40} className="mx-auto text-muted-foreground/30 mb-3" />
                         <p className="font-semibold text-foreground">No Service Reports</p>
                         <p className="text-muted-foreground text-sm mt-1">Dispatched flights will appear here as service reports</p>
@@ -453,6 +455,9 @@ export default function SecurityServiceReportsPage() {
                         <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.flight_date}</td>
                         <td className="px-3 py-2.5">
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{r.service_type}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-foreground text-xs">
+                          {r.flight_schedule_id ? (flightDetailsById.get(r.flight_schedule_id)?.skd_type || "—") : "—"}
                         </td>
                         <td className="px-3 py-2.5 text-foreground">{r.staff_count}</td>
                         <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
@@ -540,7 +545,7 @@ export default function SecurityServiceReportsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    {["#", "AIRLINE", "FLIGHT NO", "ROUTE", "A/C TYPE", "REG", "SERVICE TYPE", "ARR DATE", "STA", "DEP DATE", "STD", "STATUS"].map(h => (
+                     {["#", "AIRLINE", "FLIGHT NO", "ROUTE", "A/C TYPE", "REG", "SERVICE TYPE", "SKD TYPE", "ARR DATE", "STA", "DEP DATE", "STD", "STATUS"].map(h => (
                       <th key={h} className="data-table-header px-3 py-3 text-left whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -548,7 +553,7 @@ export default function SecurityServiceReportsPage() {
                 <tbody>
                   {filteredFlights.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="text-center py-16">
+                      <td colSpan={13} className="text-center py-16">
                         <CalendarDays size={40} className="mx-auto text-muted-foreground/30 mb-3" />
                         <p className="font-semibold text-foreground">No Security Flights</p>
                         <p className="text-muted-foreground text-sm mt-1">
@@ -571,6 +576,7 @@ export default function SecurityServiceReportsPage() {
                         <td className="px-3 py-2.5">
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{f.clearance_type}</span>
                         </td>
+                        <td className="px-3 py-2.5 text-foreground text-xs">{f.skd_type || "—"}</td>
                         <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{f.arrival_date || "—"}</td>
                         <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{f.sta || "—"}</td>
                         <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{f.departure_date || "—"}</td>
@@ -621,6 +627,8 @@ export default function SecurityServiceReportsPage() {
         route={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.route : undefined}
         sta={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.sta : undefined}
         std={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.std : undefined}
+        skdType={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.skd_type : undefined}
+        serviceType={editRow?.flight_schedule_id ? flightDetailsById.get(editRow.flight_schedule_id)?.clearance_type : undefined}
       />
       {/* Review Dialog */}
       <Dialog open={!!reviewRow} onOpenChange={(open) => !open && setReviewRow(null)}>

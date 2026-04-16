@@ -14,6 +14,7 @@ import { CLEARANCE_TYPES, SKD_TYPES, SECURITY_CLEARANCE_TYPES, getServiceCategor
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   open: boolean;
@@ -140,7 +141,7 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
           {/* Account & Station */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Account (Airline)</label>
+              <label className="text-xs font-medium text-muted-foreground">Account (Airline) <span className="text-destructive">*</span></label>
               <Popover open={airlineOpen} onOpenChange={setAirlineOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" role="combobox" aria-expanded={airlineOpen} className="w-full justify-between font-normal">
@@ -171,7 +172,7 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
               </Popover>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Station</label>
+              <label className="text-xs font-medium text-muted-foreground">Station <span className="text-destructive">*</span></label>
               <Popover open={stationOpen} onOpenChange={setStationOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" role="combobox" aria-expanded={stationOpen} className="w-full justify-between font-normal">
@@ -208,11 +209,11 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
             <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-3">Flight Details</h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground">Flight</label>
+                <label className="text-xs text-muted-foreground">Flight <span className="text-destructive">*</span></label>
                 <Input placeholder="Flight No" value={form.flight_no} onChange={e => setForm({ ...form, flight_no: e.target.value.toUpperCase() })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Route</label>
+                <label className="text-xs text-muted-foreground">Route <span className="text-destructive">*</span></label>
                 <Input placeholder="e.g. CAI-JFK-CAI" value={form.route} onChange={e => setForm({ ...form, route: e.target.value.toUpperCase() })} />
               </div>
               <div>
@@ -235,10 +236,10 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
                 <label className="text-xs text-muted-foreground">Arrival Flight</label>
                 <Input placeholder="Arrival Flight" value={form.arrival_flight} onChange={e => setForm({ ...form, arrival_flight: e.target.value.toUpperCase() })} />
               </div>
-              <DatePickerField label="Arrival Date" value={form.arrival_date} onChange={v => setForm({ ...form, arrival_date: v })} />
-              <DatePickerField label="Departure Date" value={form.departure_date} onChange={v => setForm({ ...form, departure_date: v })} />
+              <DatePickerField label="Arrival Date *" value={form.arrival_date} onChange={v => setForm({ ...form, arrival_date: v })} />
+              <DatePickerField label="Departure Date *" value={form.departure_date} onChange={v => setForm({ ...form, departure_date: v })} />
               <div>
-                <label className="text-xs text-muted-foreground">STA (24h)</label>
+                <label className="text-xs text-muted-foreground">STA (24h) <span className="text-destructive">*</span></label>
                 <Input
                   placeholder="HH:MM"
                   maxLength={5}
@@ -252,7 +253,7 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">STD (24h)</label>
+                <label className="text-xs text-muted-foreground">STD (24h) <span className="text-destructive">*</span></label>
                 <Input
                   placeholder="HH:MM"
                   maxLength={5}
@@ -266,7 +267,7 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Skd Type</label>
+                <label className="text-xs text-muted-foreground">Skd Type <span className="text-destructive">*</span></label>
                 <Select value={form.skd_type || "none"} onValueChange={v => setForm({ ...form, skd_type: v === "none" ? "" : v })}>
                   <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                   <SelectContent><SelectItem value="none">—</SelectItem>{SKD_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -318,7 +319,7 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
                 <Input placeholder="Permit No" value={form.permit_no} onChange={e => setForm({ ...form, permit_no: e.target.value })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Service Type</label>
+                <label className="text-xs text-muted-foreground">Service Type <span className="text-destructive">*</span></label>
                 <Select value={form.clearance_type} onValueChange={v => setForm({ ...form, clearance_type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{availableTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -374,7 +375,24 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
             </div>
           </div>
 
-          <Button className="w-full" onClick={onSave}>{isEdit ? "Update" : "Submit"}</Button>
+          <Button className="w-full" onClick={() => {
+            const missing: string[] = [];
+            if (!form.airline_id) missing.push("Account (Airline)");
+            if (!form.skd_type) missing.push("Skd Type");
+            if (!form.authority) missing.push("Station");
+            if (!form.flight_no) missing.push("Flight");
+            if (!form.route) missing.push("Route");
+            if (!form.arrival_date) missing.push("Arrival Date");
+            if (!form.departure_date) missing.push("Departure Date");
+            if (!form.sta) missing.push("STA (24h)");
+            if (!form.std) missing.push("STD (24h)");
+            if (!form.clearance_type) missing.push("Service Type");
+            if (missing.length > 0) {
+              toast({ title: "Missing Required Fields", description: missing.join(", "), variant: "destructive" });
+              return;
+            }
+            onSave();
+          }}>{isEdit ? "Update" : "Submit"}</Button>
         </div>
       </DialogContent>
     </Dialog>
