@@ -627,7 +627,7 @@ function HandlingServiceReportContent() {
     setNewReport(emptyReport());
   };
 
-  const startEdit = (r: ReportFormData) => { setEditId(r.id!); setEditData({ ...r }); };
+  const startEdit = (r: MergedRow | ReportFormData) => { setEditId(r.id!); setEditData({ ...r }); setActiveClearanceStatus((r as MergedRow).clearanceStatus || ""); };
   const saveEdit = () => {
     if (!editId) return;
     updateMutation.mutate({ ...editData, id: editId } as any);
