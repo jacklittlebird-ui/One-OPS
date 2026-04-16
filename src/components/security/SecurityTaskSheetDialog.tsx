@@ -382,7 +382,7 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
                 <tr className="border-b">
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">STA</td>
                   <td className="px-3 py-2 text-foreground border-r w-20 font-mono">
-                    {isNew ? <input className={inputCls} value={editableRow.scheduled_start} onChange={e => updateRow("scheduled_start", e.target.value)} placeholder="HH:MM" maxLength={5} /> : (sta || "—")}
+                    {isNew ? <input className={inputCls} value={editableRow.scheduled_start} onChange={e => updateRow("scheduled_start", formatTimeInput(e.target.value, editableRow.scheduled_start))} placeholder="HH:MM" maxLength={5} /> : (sta || "—")}
                   </td>
                   <td className="px-3 py-2 font-semibold text-foreground border-r bg-muted/40 w-16">ATA</td>
                   <td className="px-3 py-2 text-foreground border-r w-20 font-mono">
