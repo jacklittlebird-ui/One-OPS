@@ -150,7 +150,12 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
   };
 
   const handleSave = () => {
-    onSave(isNew ? editableRow : row, sheet);
+    const enrichedSheet = {
+      ...sheet,
+      registration: editableRow.registration || registration || "",
+      route: editableRow.route || route || "",
+    };
+    onSave(isNew ? editableRow : row, enrichedSheet);
   };
 
   const formatDate = (d: string) => {
