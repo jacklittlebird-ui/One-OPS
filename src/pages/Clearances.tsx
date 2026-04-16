@@ -310,7 +310,8 @@ export default function ClearancesPage() {
           .from("flight_schedules")
           .insert(newRecords);
         if (insertError) {
-          toast({ title: "Error", description: insertError.message, variant: "destructive" });
+          const isDuplicate = insertError.message?.includes("idx_flight_schedules_no_duplicates") || insertError.code === "23505";
+          toast({ title: "Error", description: isDuplicate ? "Duplicate flight detected: a flight with the same number, route, date, and service type already exists." : insertError.message, variant: "destructive" });
           return;
         }
 
