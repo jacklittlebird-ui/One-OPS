@@ -467,28 +467,28 @@ export default function TabbedReportForm({ data, onChange, onSave, onCancel, tit
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 backdrop-blur-sm p-4">
       <div className="bg-card rounded-2xl border shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header — gradient with summary chips */}
-        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b px-6 py-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-11 w-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 ring-1 ring-primary/20">
-                <FileBarChart2 size={20} />
+        <div className="relative bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b px-8 py-7">
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="h-16 w-16 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shrink-0 ring-1 ring-primary/20">
+                <FileBarChart2 size={28} />
               </div>
               <div className="min-w-0">
-                <h2 className="font-bold text-foreground text-lg leading-tight truncate">{title}</h2>
-                <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs mt-0.5">
-                  <span className="font-bold text-primary">{flightLabel}</span>
+                <h2 className="font-bold text-foreground text-2xl leading-tight truncate">{title}</h2>
+                <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm mt-1.5">
+                  <span className="font-bold text-primary text-base">{flightLabel}</span>
                   {routeLabel && <span className="text-muted-foreground">· {routeLabel}</span>}
                   {data.station && <span className="text-muted-foreground">· {data.station}</span>}
                   {data.handlingType && (
-                    <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-semibold">{data.handlingType}</span>
+                    <span className="px-2 py-0.5 rounded bg-primary/15 text-primary font-semibold text-xs">{data.handlingType}</span>
                   )}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden md:flex flex-col items-end px-3 py-1.5 rounded-lg bg-card/70 border">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total Cost</span>
-                <span className="text-sm font-bold text-success">{data.currency || "USD"} {totalCostPreview}</span>
+              <div className="hidden md:flex flex-col items-end px-4 py-2.5 rounded-xl bg-card/70 border">
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Total Cost</span>
+                <span className="text-lg font-bold text-success">{data.currency || "USD"} {totalCostPreview}</span>
               </div>
             </div>
           </div>
