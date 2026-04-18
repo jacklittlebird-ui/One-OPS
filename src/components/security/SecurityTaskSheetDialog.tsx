@@ -155,6 +155,7 @@ function Chip({ icon, label, value, accent = "bg-white/15" }: { icon?: React.Rea
 }
 
 export default function SecurityTaskSheetDialog({ row, onClose, onSave, registration, route, sta, std, ata, atd, skdType, serviceType, isNew }: Props) {
+  const { activeChannel } = useChannel();
   const [sheet, setSheet] = useState<TaskSheetData>(emptyTaskSheet());
   const [editableRow, setEditableRow] = useState<DispatchRow | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
