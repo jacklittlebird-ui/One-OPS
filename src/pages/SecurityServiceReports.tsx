@@ -675,7 +675,7 @@ export default function SecurityServiceReportsPage() {
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1">
-                            <button onClick={() => setEditRow({ ...r })} className="p-1 rounded hover:bg-muted" title="Edit Report">
+                            <button onClick={() => tryOpenEdit(r)} className="p-1 rounded hover:bg-muted" title="Edit Report">
                               <Pencil size={14} className="text-muted-foreground" />
                             </button>
                             {r.review_status === "Draft" && r.status === "Completed" && (
