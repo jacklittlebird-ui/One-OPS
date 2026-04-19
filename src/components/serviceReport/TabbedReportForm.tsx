@@ -241,6 +241,11 @@ interface Props {
   onCancel: () => void;
   title: string;
   clearanceStatus?: string;
+  /** When true, all fields are read-only and Save is hidden. Used by Operations review. */
+  reviewMode?: boolean;
+  /** Operations review actions */
+  onApprove?: (comment: string) => void;
+  onReject?: (comment: string) => void;
 }
 
 const tabIcons: Record<ReportTab, React.ReactNode> = {
@@ -253,9 +258,10 @@ const tabIcons: Record<ReportTab, React.ReactNode> = {
   "fuel-handling": <Fuel size={14} />,
 };
 
-export default function TabbedReportForm({ data, onChange, onSave, onCancel, title, clearanceStatus }: Props) {
+export default function TabbedReportForm({ data, onChange, onSave, onCancel, title, clearanceStatus, reviewMode = false, onApprove, onReject }: Props) {
   const { activeChannel } = useChannel();
   const [activeTab, setActiveTab] = useState<ReportTab>("flight");
+  const [reviewComment, setReviewComment] = useState<string>(data.reviewComment || "");
 
   type DelayCodeRow = { id: string; code: string; description: string; category: string; responsible: string; impact_level: string; avg_minutes: number; active: boolean };
   const { data: delayCodes } = useSupabaseTable<DelayCodeRow>("delay_codes", { orderBy: "code", ascending: true });
