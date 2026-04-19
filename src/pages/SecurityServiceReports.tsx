@@ -282,6 +282,10 @@ export default function SecurityServiceReportsPage() {
 
   const filtered = useMemo(() => {
     let rows = dispatches;
+    // Operations: only linked/completed reports
+    if (isOperationsView) rows = rows.filter(r => r.status === "Completed" || r.review_status === "Pending Review" || r.review_status === "Rejected");
+    // Station "Rejected" tab
+    if (isStationView && stationTab === "rejected") rows = rows.filter(r => r.review_status === "Rejected");
     if (stationFilter !== "All Stations") rows = rows.filter(r => r.station === stationFilter);
     if (reviewFilter !== "All") rows = rows.filter(r => r.review_status === reviewFilter);
     if (serviceFilter !== "All Types") rows = rows.filter(r => r.service_type === serviceFilter);
@@ -297,7 +301,7 @@ export default function SecurityServiceReportsPage() {
       );
     }
     return rows;
-  }, [dispatches, stationFilter, reviewFilter, serviceFilter, dateFrom, dateTo, search]);
+  }, [dispatches, stationFilter, reviewFilter, serviceFilter, dateFrom, dateTo, search, isOperationsView, isStationView, stationTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
