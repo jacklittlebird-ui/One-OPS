@@ -46,7 +46,7 @@ export function useSupabaseTable<T extends Record<string, any>>(
           .order(orderCol, { ascending: asc })
           .range(from, from + PAGE_SIZE - 1);
         if (applyStationFilter) {
-          q = q.eq("station", station as string);
+          q = (q as any).eq("station", station as string);
         }
         const { data, error } = await q;
         if (error) throw error;
