@@ -796,8 +796,42 @@ function HandlingServiceReportContent() {
             <button onClick={() => navigate("/services")} className="text-primary hover:underline">Chart of Services</button>
           </p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="toolbar-btn-primary shrink-0"><Plus size={14} /> New Service Report</button>
+        {canCreateNew && (
+          <button onClick={() => setShowAdd(true)} className="toolbar-btn-primary shrink-0"><Plus size={14} /> New Service Report</button>
+        )}
       </div>
+
+      {/* Station-only sub-tabs (All vs Rejected) */}
+      {isStationView && (
+        <div className="flex items-center gap-2 border-b">
+          <button
+            onClick={() => { setStationTab("all"); setPage(1); }}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+              stationTab === "all"
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`}
+          >
+            All Reports
+          </button>
+          <button
+            onClick={() => { setStationTab("rejected"); setPage(1); }}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-2 ${
+              stationTab === "rejected"
+                ? "text-destructive border-destructive"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`}
+          >
+            <AlertCircle size={14} />
+            Rejected Service Reports
+            {rejectedCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                {rejectedCount}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
