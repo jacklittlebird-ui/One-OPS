@@ -503,6 +503,15 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
           />
         </div>
 
+        {reviewMode && (
+          <div className="px-6 py-2.5 border-b bg-warning/10 border-warning/30 flex items-center gap-2 text-warning-foreground text-xs">
+            <Eye size={14} className="text-warning" />
+            <span className="font-semibold uppercase tracking-wider text-warning">Review Mode</span>
+            <span className="text-muted-foreground">— Form is read-only. Approve or reject the report below.</span>
+          </div>
+        )}
+
+        <fieldset disabled={reviewMode} className="contents">
         <div className="px-6 py-4 space-y-4 bg-muted/10" ref={printRef}>
           {/* Airline & Station (editable for new) */}
           {isNew && (
