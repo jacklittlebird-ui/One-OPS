@@ -54,7 +54,7 @@ export default function LoginPage() {
               { icon: Clock, label: "Real-Time Ops" },
             ].map(({ icon: Icon, label }) => (
               <div key={label} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/[0.08] backdrop-blur-sm">
-                <Icon size={20} className="text-white/90" />
+                <Icon size={28} className="text-white/90" />
                 <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider">{label}</span>
               </div>
             ))}
