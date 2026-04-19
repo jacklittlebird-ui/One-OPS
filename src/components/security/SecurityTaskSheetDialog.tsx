@@ -214,6 +214,7 @@ export default function SecurityTaskSheetDialog({ row, onClose, onSave, registra
   useEffect(() => {
     if (row) {
       setEditableRow({ ...row });
+      setReviewComment(row.review_comment || "");
       setContractId((row as any).contract_id || "");
       setExtraManpower((row as any).extra_manpower_count || 0);
       setRampVehicleTrips((row as any).ramp_vehicle_trips || 0);
