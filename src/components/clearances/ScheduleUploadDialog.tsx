@@ -131,7 +131,8 @@ export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
         no_of_flights: f.number_of_flights || null,
         ref_no: f.ref_number || null,
         notes: f.notes || null,
-      }));
+      };
+      });
 
       // Remove duplicates: delete existing records matching same airline + station + flight_no + dates
       const uniqueKeys = [...new Set(records.map(r => r.flight_no).filter(Boolean))];
