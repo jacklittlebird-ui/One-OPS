@@ -11,14 +11,15 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ParsedRow, parseScheduleFile } from "@/lib/scheduleParser";
-import { CLEARANCE_TYPES } from "@/components/clearances/ClearanceTypes";
+import { CLEARANCE_TYPES, SECURITY_CLEARANCE_TYPES, getServiceCategory, type ServiceCategory } from "@/components/clearances/ClearanceTypes";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  defaultCategory?: ServiceCategory;
 }
 
-export default function ScheduleUploadDialog({ open, onOpenChange }: Props) {
+export default function ScheduleUploadDialog({ open, onOpenChange, defaultCategory = "handling" }: Props) {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<"upload" | "preview" | "importing">("upload");
