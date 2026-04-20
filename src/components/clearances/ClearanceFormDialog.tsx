@@ -43,10 +43,19 @@ function calcNoOfFlights(periodFrom: string, periodTo: string, weekDays: string)
   return count;
 }
 
-/** Convert ISO string (yyyy-mm-dd) to Date or undefined */
+/** Convert ISO string (yyyy-mm-dd) to local Date (no TZ shift) or undefined */
 function toDate(val: string | null | undefined): Date | undefined {
   if (!val) return undefined;
-  const d = new Date(val);
+  const str = String(val).trim();
+  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
+  const dmy = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  if (dmy) {
+    let y = parseInt(dmy[3]);
+    if (y < 100) y += y < 50 ? 2000 : 1900;
+    return new Date(y, parseInt(dmy[2]) - 1, parseInt(dmy[1]));
+  }
+  const d = new Date(str);
   return isNaN(d.getTime()) ? undefined : d;
 }
 
@@ -56,12 +65,20 @@ function toISO(d: Date | undefined): string {
   return format(d, "yyyy-MM-dd");
 }
 
-/** Display date as DD/MM/YYYY */
+/** Display date as DD/MM/YYYY (TZ-safe) */
 function displayDate(val: string | null | undefined): string {
   if (!val) return "";
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return "";
-  return format(d, "dd/MM/yyyy");
+  const str = String(val).trim();
+  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const dmy = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  if (dmy) {
+    let [, d, m, y] = dmy;
+    if (y.length === 2) y = (parseInt(y) < 50 ? "20" : "19") + y;
+    return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
+  }
+  const d = toDate(str);
+  return d ? format(d, "dd/MM/yyyy") : "";
 }
 
 function DatePickerField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
@@ -136,7 +153,6 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
   const validateAndSave = () => {
     const ct = form.clearance_type || "";
     const staLocked = ct === "Departure Security";
-    const stdLocked = ct === "Arrival Security";
     const missing: string[] = [];
     if (!form.airline_id) missing.push("Account (Airline)");
     if (!form.skd_type) missing.push("Skd Type");
@@ -146,15 +162,14 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
     if (!form.arrival_date) missing.push("Arrival Date");
     if (!form.departure_date) missing.push("Departure Date");
     if (!staLocked && !form.sta) missing.push("STA (24h)");
-    if (!stdLocked && !form.std) missing.push("STD (24h)");
+    if (!form.std) missing.push("STD (24h)");
     if (!form.clearance_type) missing.push("Service Type");
     if (missing.length > 0) {
       toast({ title: "Missing Required Fields", description: missing.join(", "), variant: "destructive" });
       return;
     }
-    // Clear locked time fields before saving
+    // Clear STA only when locked (Departure Security)
     if (staLocked && form.sta) setForm({ ...form, sta: "" });
-    if (stdLocked && form.std) setForm({ ...form, std: "" });
     onSave();
   };
 
@@ -321,10 +336,8 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
               </div>
               {(() => {
                 const ct = form.clearance_type || "";
-                // Arrival Security: STA editable, STD locked & cleared
-                // Departure Security: STD editable, STA locked & cleared
+                // Departure Security: STA locked & cleared. STD always editable.
                 const staLocked = ct === "Departure Security";
-                const stdLocked = ct === "Arrival Security";
                 return (
                   <>
                     <div>
@@ -346,16 +359,13 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">STD (24h) {!stdLocked && <span className="text-destructive">*</span>}</label>
+                      <label className="text-xs text-muted-foreground">STD (24h) <span className="text-destructive">*</span></label>
                       <Input
-                        placeholder={stdLocked ? "—" : "HH:MM"}
+                        placeholder="HH:MM"
                         maxLength={5}
-                        readOnly={stdLocked}
-                        disabled={stdLocked}
-                        className={cn("font-mono", stdLocked && "bg-muted text-muted-foreground")}
-                        value={stdLocked ? "" : (form.std || "")}
+                        className="font-mono"
+                        value={form.std || ""}
                         onChange={e => {
-                          if (stdLocked) return;
                           let v = e.target.value.replace(/[^0-9:]/g, "");
                           if (v.length === 2 && !v.includes(":") && form.std?.length !== 3) v += ":";
                           if (v.length > 5) v = v.slice(0, 5);
