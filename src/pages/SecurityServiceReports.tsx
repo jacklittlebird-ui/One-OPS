@@ -354,6 +354,22 @@ export default function SecurityServiceReportsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // KPIs (computed from the merged/filtered list)
+  const totalReports = filtered.length;
+  const completedReports = filtered.filter(r => r.status === "Completed").length;
+  const approvedReports = filtered.filter(r => r.review_status === "Approved" || r.review_status === "Ready for Billing").length;
+  const totalRevenue = filtered.reduce((s, r) => s + (r.total_charge || 0), 0);
+  const totalOvertimeHrs = filtered.reduce((s, r) => s + (r.overtime_hours || 0), 0);
+  const totalStaffDeployed = filtered.reduce((s, r) => s + (r.staff_count || 0), 0);
+  const pendingReview = filtered.filter(r => r.review_status === "Pending Review").length;
+  const readyForBilling = filtered.filter(r => r.review_status === "Ready for Billing").length;
+
+  const linkedIrregularities = useMemo(() => {
+    const map = new Map<string, typeof irregularities[0]>();
+    irregularities.forEach(ir => map.set(ir.id, ir));
+    return map;
+  }, [irregularities]);
+
   const saveEdit = () => {};
 
   const saveTaskSheet = (row: DispatchRow, taskSheet: any) => {
