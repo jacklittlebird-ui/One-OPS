@@ -516,7 +516,9 @@ export default function SecurityServiceReportsPage() {
             Security service documentation · Pipeline:{" "}
             <button onClick={() => navigate("/clearances")} className="text-primary hover:underline">Schedule</button>
             {" → "}
-            <span className="font-semibold text-foreground">Security Service</span>
+            <span className="font-semibold text-foreground">Station</span>
+            {" → "}
+            <span className="font-semibold text-foreground">Operations</span>
             {" → "}
             <button onClick={() => navigate("/invoices")} className="text-primary hover:underline">Finance</button>
           </p>
