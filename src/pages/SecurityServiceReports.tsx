@@ -660,8 +660,7 @@ export default function SecurityServiceReportsPage() {
           <button onClick={handleExport} className="toolbar-btn-outline"><Download size={14} /> Export</button>
         </div>
 
-        {true ? (
-          <>
+        <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -683,23 +682,23 @@ export default function SecurityServiceReportsPage() {
                       </td>
                     </tr>
                   ) : pageData.map((r, i) => {
-                    const rc = reviewStatusConfig[r.review_status] || reviewStatusConfig["Draft"];
                     const sc = dispatchStatusConfig[r.status] || dispatchStatusConfig["Pending"];
                     const hasIrregularity = r.irregularity_id && linkedIrregularities.has(r.irregularity_id);
+                    const isPending = (r as any).isPending === true;
                     return (
-                      <tr key={r.id} className="data-table-row">
+                      <tr key={r.id} className={`data-table-row ${isPending ? "bg-muted/30" : ""}`}>
                         <td className="px-3 py-2.5 text-muted-foreground text-xs">{(page - 1) * PAGE_SIZE + i + 1}</td>
                         <td className="px-3 py-2.5 font-semibold text-foreground">{r.station}</td>
-                        <td className="px-3 py-2.5 text-foreground">{r.airline}</td>
+                        <td className="px-3 py-2.5 text-foreground">{r.airline || "—"}</td>
                         <td className="px-3 py-2.5 font-mono text-xs text-foreground">{r.flight_no}</td>
-                        <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.flight_date}</td>
+                        <td className="px-3 py-2.5 text-foreground whitespace-nowrap">{r.flight_date || "—"}</td>
                         <td className="px-3 py-2.5">
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">{r.service_type}</span>
                         </td>
                         <td className="px-3 py-2.5 text-foreground text-xs">
-                          {r.flight_schedule_id ? (flightDetailsById.get(r.flight_schedule_id)?.skd_type || "—") : "—"}
+                          {r.flight_schedule_id ? (flightDetailsById.get(r.flight_schedule_id)?.skd_type || (r as any).flightMeta?.skd_type || "—") : "—"}
                         </td>
-                        <td className="px-3 py-2.5 text-foreground">{r.staff_count}</td>
+                        <td className="px-3 py-2.5 text-foreground">{isPending ? "—" : r.staff_count}</td>
                         <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
                           {r.actual_start && r.actual_end ? `${r.actual_start}–${r.actual_end}` : "—"}
                         </td>
@@ -732,23 +731,37 @@ export default function SecurityServiceReportsPage() {
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1">
-                            <button onClick={() => tryOpenEdit(r)} className="p-1 rounded hover:bg-muted" title="Edit Report">
-                              <Pencil size={14} className="text-muted-foreground" />
-                            </button>
-                            {r.review_status === "Draft" && r.status === "Completed" && (
-                              <button onClick={() => submitForReview(r)} className="p-1 rounded hover:bg-muted" title="Submit for Review">
-                                <ExternalLink size={14} className="text-primary" />
-                              </button>
-                            )}
-                            {r.review_status === "Pending Review" && (
-                              <button onClick={() => { setReviewRow(r); setReviewComment(r.review_comment); }} className="p-1 rounded hover:bg-muted" title="Review">
-                                <MessageSquare size={14} className="text-warning" />
-                              </button>
-                            )}
-                            {r.review_status === "Approved" && (
-                              <button onClick={() => markReadyForBilling(r)} className="p-1 rounded hover:bg-muted" title="Mark Ready for Billing">
-                                <DollarSign size={14} className="text-success" />
-                              </button>
+                            {isPending ? (
+                              canCreateNew && (
+                                <button
+                                  onClick={() => { setIsNewReport(true); setEditRow({ ...r, id: "new" } as DispatchRow); }}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                  title="Complete Service Report"
+                                >
+                                  <Pencil size={12} /> Complete
+                                </button>
+                              )
+                            ) : (
+                              <>
+                                <button onClick={() => tryOpenEdit(r)} className="p-1 rounded hover:bg-muted" title="Edit Report">
+                                  <Pencil size={14} className="text-muted-foreground" />
+                                </button>
+                                {r.review_status === "Draft" && r.status === "Completed" && (
+                                  <button onClick={() => submitForReview(r)} className="p-1 rounded hover:bg-muted" title="Submit for Review">
+                                    <ExternalLink size={14} className="text-primary" />
+                                  </button>
+                                )}
+                                {r.review_status === "Pending Review" && (
+                                  <button onClick={() => { setReviewRow(r); setReviewComment(r.review_comment); }} className="p-1 rounded hover:bg-muted" title="Review">
+                                    <MessageSquare size={14} className="text-warning" />
+                                  </button>
+                                )}
+                                {r.review_status === "Approved" && (
+                                  <button onClick={() => markReadyForBilling(r)} className="p-1 rounded hover:bg-muted" title="Mark Ready for Billing">
+                                    <DollarSign size={14} className="text-success" />
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </td>
@@ -783,7 +796,6 @@ export default function SecurityServiceReportsPage() {
               </div>
             )}
           </>
-        ) : null}
       </div>
 
       {/* Security Task Sheet Dialog */}
