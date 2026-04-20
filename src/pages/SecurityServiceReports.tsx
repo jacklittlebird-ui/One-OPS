@@ -629,54 +629,40 @@ export default function SecurityServiceReportsPage() {
         </div>
       </div>
 
-      {/* Main Tabs: Reports vs Scheduled Flights */}
+      {/* Service Reports list (clearance flights merged in) */}
       <div className="bg-card rounded-lg border overflow-hidden">
         <div className="p-4 border-b flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 mr-auto">
-            <button
-              onClick={() => { setActiveMainTab("reports"); setPage(1); }}
-              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition ${activeMainTab === "reports" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-            >
-              <FileBarChart2 size={14} className="inline mr-1" /> Service Reports ({filtered.length})
-            </button>
-            <button
-              onClick={() => { setActiveMainTab("flights"); setFlightsPage(1); }}
-              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition ${activeMainTab === "flights" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
-            >
-              <CalendarDays size={14} className="inline mr-1" /> Scheduled Flights ({filteredFlights.length})
-            </button>
-          </div>
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2 mr-auto">
+            <FileBarChart2 size={16} className="text-primary" /> Service Reports
+            <span className="text-xs font-normal text-muted-foreground">({filtered.length})</span>
+          </h2>
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text" placeholder="Search airline, flight, staff…"
-              value={search} onChange={e => { setSearch(e.target.value); setPage(1); setFlightsPage(1); }}
+              value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
               className="pl-8 pr-3 py-1.5 text-sm border rounded bg-card text-foreground placeholder:text-muted-foreground w-56 focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          {activeMainTab === "reports" && (
-            <>
-              <select value={stationFilter} onChange={e => { setStationFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-                <option>All Stations</option>
-                {allStations.map(s => <option key={s}>{s}</option>)}
-              </select>
-              <select value={serviceFilter} onChange={e => { setServiceFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-                <option>All Types</option>
-                {allServiceTypes.map(s => <option key={s}>{s}</option>)}
-              </select>
-              <select value={reviewFilter} onChange={e => { setReviewFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
-                <option>All</option>
-                {REVIEW_STATUSES.map(s => <option key={s}>{s}</option>)}
-                <option>Rejected</option>
-              </select>
-            </>
-          )}
-          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); setFlightsPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="From" />
-          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); setFlightsPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="To" />
+          <select value={stationFilter} onChange={e => { setStationFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
+            <option>All Stations</option>
+            {allStations.map(s => <option key={s}>{s}</option>)}
+          </select>
+          <select value={serviceFilter} onChange={e => { setServiceFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
+            <option>All Types</option>
+            {allServiceTypes.map(s => <option key={s}>{s}</option>)}
+          </select>
+          <select value={reviewFilter} onChange={e => { setReviewFilter(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground">
+            <option>All</option>
+            {REVIEW_STATUSES.map(s => <option key={s}>{s}</option>)}
+            <option>Rejected</option>
+          </select>
+          <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="From" />
+          <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} className="text-sm border rounded px-2 py-1.5 bg-card text-foreground" title="To" />
           <button onClick={handleExport} className="toolbar-btn-outline"><Download size={14} /> Export</button>
         </div>
 
-        {activeMainTab === "reports" ? (
+        {true ? (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
