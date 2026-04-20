@@ -129,7 +129,7 @@ export default function ClearancesPage() {
 
   const airlineMap = Object.fromEntries((airlines || []).map((a: any) => [a.id, a]));
 
-  const stations = ["CAI", "HRG", "SSH"];
+  const stations = [...new Set((airportsList || []).map((a: any) => a.iata_code).filter(Boolean))].sort();
   const registrations = [...new Set(data.map(c => c.registration).filter(Boolean))].sort();
 
   const filtered = data.filter(c => {
