@@ -384,6 +384,10 @@ export default function SecurityServiceReportsPage() {
     const overtimeCharge = (overtimeMins / 60) * (row.overtime_rate || 0) * (row.staff_count || 1);
     const totalCharge = (row.base_fee || 0) + (row.service_rate || 0) + overtimeCharge;
 
+    // Detect "completing a clearance flight" case: new dispatch but row already
+    // has a flight_schedule_id (came from a pending clearance row).
+    const isCompletingClearanceFlight = isNewReport && !!(row as any).flight_schedule_id;
+
     const payload: Record<string, any> = {
       task_sheet_data: taskSheet,
       notes: taskSheet.remarks || row.notes,
@@ -393,9 +397,10 @@ export default function SecurityServiceReportsPage() {
       overtime_hours: overtimeHours,
       overtime_charge: Math.round(overtimeCharge * 100) / 100,
       total_charge: Math.round(totalCharge * 100) / 100,
-      // New reports stay "Pending" until clearance approves the linked flight schedule.
-      // Existing reports keep their normal "Completed" flow on save.
-      status: isNewReport ? "Pending" : "Completed",
+      // Brand-new reports (no clearance link yet) stay "Pending" until clearance
+      // approves the linked flight schedule. Completing a clearance flight or
+      // editing an existing report → mark "Completed" so step 2 (Station) is done.
+      status: (isNewReport && !isCompletingClearanceFlight) ? "Pending" : "Completed",
       station: row.station,
       airline: row.airline,
       flight_no: row.flight_no,
@@ -415,11 +420,27 @@ export default function SecurityServiceReportsPage() {
       charges_breakdown: (row as any).charges_breakdown ?? [],
       total_security_charges: (row as any).total_security_charges ?? 0,
       charges_currency: (row as any).charges_currency || "USD",
-      // New reports start in Draft until clearance approval triggers Pending Review
-      ...(isNewReport ? { review_status: "Draft" } : {}),
+      // New reports start in Draft; completing a clearance flight goes straight to Pending Review
+      ...(isNewReport ? { review_status: isCompletingClearanceFlight ? "Pending Review" : "Draft" } : {}),
     };
 
-    if (isNewReport) {
+    if (isCompletingClearanceFlight) {
+      // Reuse the existing clearance flight schedule — just create the dispatch
+      // record linked to it. Step 2 (Station) is now complete.
+      (async () => {
+        try {
+          const dispatchInsert = { ...payload, flight_schedule_id: (row as any).flight_schedule_id };
+          const { error: dispatchErr } = await supabase
+            .from("dispatch_assignments")
+            .insert(dispatchInsert as any);
+          if (dispatchErr) throw dispatchErr;
+          queryClient.invalidateQueries({ queryKey: ["dispatch_assignments"] });
+          toast({ title: "Task Sheet Saved", description: "Step 2 (Station) complete — sent for Operations review." });
+        } catch (e: any) {
+          toast({ title: "Error", description: e.message, variant: "destructive" });
+        }
+      })();
+    } else if (isNewReport) {
       // Create the dispatch + clearance flight_schedule together, then link them.
       (async () => {
         try {
