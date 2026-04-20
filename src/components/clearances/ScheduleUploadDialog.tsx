@@ -135,7 +135,12 @@ export default function ScheduleUploadDialog({ open, onOpenChange, defaultCatego
         toast({ title: "Empty file", description: "No data rows found. Check the file format.", variant: "destructive" });
         return;
       }
-      setFlights(result.rows);
+      const defaultType = defaultCategory === "security" ? "Arrival Security" : "Full Handling";
+      const normalized = result.rows.map(r => {
+        const cat = getServiceCategory(r.service_type as any);
+        return cat === defaultCategory ? r : { ...r, service_type: defaultType };
+      });
+      setFlights(normalized);
       setIsTrafficReport(result.isTrafficReport);
       setStep("preview");
     } catch (err: any) {
