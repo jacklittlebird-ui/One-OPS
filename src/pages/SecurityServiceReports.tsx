@@ -757,6 +757,7 @@ export default function SecurityServiceReportsPage() {
                               reviewStatus: r.review_status,
                               clearanceStatus: r.flight_schedule_id ? flightStatusById.get(r.flight_schedule_id) : undefined,
                               dispatchStatus: r.status,
+                              channel: activeChannel,
                             })}
                             compact
                           />
