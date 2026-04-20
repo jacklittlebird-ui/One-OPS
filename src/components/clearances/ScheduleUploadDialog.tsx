@@ -312,7 +312,7 @@ export default function ScheduleUploadDialog({ open, onOpenChange, defaultCatego
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {CLEARANCE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            {(defaultCategory === "security" ? SECURITY_CLEARANCE_TYPES : CLEARANCE_TYPES.filter(t => !SECURITY_CLEARANCE_TYPES.includes(t as any))).map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </TableCell>
