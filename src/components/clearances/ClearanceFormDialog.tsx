@@ -338,10 +338,8 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
               </div>
               {(() => {
                 const ct = form.clearance_type || "";
-                // Arrival Security: STA editable, STD locked & cleared
-                // Departure Security: STD editable, STA locked & cleared
+                // Departure Security: STA locked & cleared. STD always editable.
                 const staLocked = ct === "Departure Security";
-                const stdLocked = ct === "Arrival Security";
                 return (
                   <>
                     <div>
@@ -363,16 +361,13 @@ export default function ClearanceFormDialog({ open, onOpenChange, form, setForm,
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground">STD (24h) {!stdLocked && <span className="text-destructive">*</span>}</label>
+                      <label className="text-xs text-muted-foreground">STD (24h) <span className="text-destructive">*</span></label>
                       <Input
-                        placeholder={stdLocked ? "—" : "HH:MM"}
+                        placeholder="HH:MM"
                         maxLength={5}
-                        readOnly={stdLocked}
-                        disabled={stdLocked}
-                        className={cn("font-mono", stdLocked && "bg-muted text-muted-foreground")}
-                        value={stdLocked ? "" : (form.std || "")}
+                        className="font-mono"
+                        value={form.std || ""}
                         onChange={e => {
-                          if (stdLocked) return;
                           let v = e.target.value.replace(/[^0-9:]/g, "");
                           if (v.length === 2 && !v.includes(":") && form.std?.length !== 3) v += ":";
                           if (v.length > 5) v = v.slice(0, 5);
