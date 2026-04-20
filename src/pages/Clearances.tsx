@@ -108,6 +108,7 @@ function CalendarView({ flights, month, onMonthChange, airlineMap, onView, onEdi
 export default function ClearancesPage() {
   const { data, isLoading, refetch, add, update, remove } = useSupabaseTable<ClearanceRow>("flight_schedules");
   const { data: airlines } = useQuery({ queryKey: ["airlines"], queryFn: async () => { const { data } = await supabase.from("airlines").select("id,name,code"); return data || []; } });
+  const { data: airportsList } = useQuery({ queryKey: ["airports-iata"], queryFn: async () => { const { data } = await supabase.from("airports").select("iata_code,name").order("iata_code"); return data || []; } });
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -128,7 +129,7 @@ export default function ClearancesPage() {
 
   const airlineMap = Object.fromEntries((airlines || []).map((a: any) => [a.id, a]));
 
-  const stations = ["CAI", "HRG", "SSH"];
+  const stations = [...new Set((airportsList || []).map((a: any) => a.iata_code).filter(Boolean))].sort();
   const registrations = [...new Set(data.map(c => c.registration).filter(Boolean))].sort();
 
   const filtered = data.filter(c => {
