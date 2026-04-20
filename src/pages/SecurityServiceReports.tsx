@@ -258,9 +258,9 @@ export default function SecurityServiceReportsPage() {
     return map;
   }, [securityFlights]);
 
-  // Build lookup for flight schedule details (registration, route, sta, std)
+  // Build lookup for flight schedule details (registration, route, sta, std, dates, aircraft type)
   const flightDetailsById = useMemo(() => {
-    const map = new Map<string, { registration: string; route: string; sta: string; std: string; ata: string; atd: string; skd_type: string; clearance_type: string }>();
+    const map = new Map<string, { registration: string; route: string; sta: string; std: string; ata: string; atd: string; skd_type: string; clearance_type: string; arrival_date: string; departure_date: string; aircraft_type: string }>();
     securityFlights.forEach((f: any) => map.set(f.id, {
       registration: f.registration || "",
       route: f.route || "",
@@ -270,6 +270,9 @@ export default function SecurityServiceReportsPage() {
       atd: "",
       skd_type: f.skd_type || "",
       clearance_type: f.clearance_type || "",
+      arrival_date: f.arrival_date || "",
+      departure_date: f.departure_date || "",
+      aircraft_type: f.aircraft_type || "",
     }));
     return map;
   }, [securityFlights]);
