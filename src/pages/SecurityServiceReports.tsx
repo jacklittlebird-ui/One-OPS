@@ -280,66 +280,79 @@ export default function SecurityServiceReportsPage() {
   const allStations = useMemo(() => [...new Set(dispatches.map(d => d.station))].sort(), [dispatches]);
   const allServiceTypes = useMemo(() => [...new Set(dispatches.map(d => d.service_type))].sort(), [dispatches]);
 
+  // Build merged list: completed/in-progress dispatches + clearance flights without a dispatch (pending completion)
+  type MergedSecurityRow = DispatchRow & { isPending?: boolean; flightMeta?: any };
+
+  const mergedRows: MergedSecurityRow[] = useMemo(() => {
+    const dispatchedFlightIds = new Set(
+      dispatches.map(d => d.flight_schedule_id).filter(Boolean) as string[]
+    );
+    const pendingRows: MergedSecurityRow[] = (securityFlights as any[])
+      .filter((f: any) => !dispatchedFlightIds.has(f.id))
+      .map((f: any) => ({
+        id: `pending-${f.id}`,
+        flight_schedule_id: f.id,
+        contract_id: null,
+        station: f.authority || "CAI",
+        airline: f.airlines?.name || f.airlines?.iata_code || f.handling_agent || "",
+        flight_no: f.flight_no || "",
+        flight_date: f.arrival_date || f.departure_date || "",
+        service_type: f.clearance_type || "Arrival Security",
+        staff_names: "",
+        staff_count: 0,
+        scheduled_start: f.sta || "",
+        scheduled_end: f.std || "",
+        actual_start: "",
+        actual_end: "",
+        contract_duration_hours: 0,
+        actual_duration_hours: 0,
+        overtime_hours: 0,
+        overtime_rate: 0,
+        base_fee: 0,
+        service_rate: 0,
+        overtime_charge: 0,
+        total_charge: 0,
+        status: "Pending",
+        notes: "",
+        dispatched_by: "",
+        review_status: "Draft",
+        review_comment: "",
+        reviewed_by: "",
+        reviewed_at: null,
+        irregularity_id: null,
+        created_at: "",
+        updated_at: "",
+        isPending: true,
+        flightMeta: f,
+      }));
+    return [...dispatches, ...pendingRows];
+  }, [dispatches, securityFlights]);
+
   const filtered = useMemo(() => {
-    let rows = dispatches;
-    // Operations: only linked/completed reports
-    if (isOperationsView) rows = rows.filter(r => r.status === "Completed" || r.review_status === "Pending Review" || r.review_status === "Rejected");
+    let rows: MergedSecurityRow[] = mergedRows;
+    // Operations: only linked/completed reports (skip un-dispatched pending flights)
+    if (isOperationsView) rows = rows.filter(r => !r.isPending && (r.status === "Completed" || r.review_status === "Pending Review" || r.review_status === "Rejected"));
     // Station "Rejected" tab
     if (isStationView && stationTab === "rejected") rows = rows.filter(r => r.review_status === "Rejected");
     if (stationFilter !== "All Stations") rows = rows.filter(r => r.station === stationFilter);
     if (reviewFilter !== "All") rows = rows.filter(r => r.review_status === reviewFilter);
     if (serviceFilter !== "All Types") rows = rows.filter(r => r.service_type === serviceFilter);
-    if (dateFrom) rows = rows.filter(r => r.flight_date >= dateFrom);
-    if (dateTo) rows = rows.filter(r => r.flight_date <= dateTo);
+    if (dateFrom) rows = rows.filter(r => (r.flight_date || "") >= dateFrom);
+    if (dateTo) rows = rows.filter(r => (r.flight_date || "") <= dateTo);
     if (search) {
       const s = search.toLowerCase();
       rows = rows.filter(r =>
-        r.airline.toLowerCase().includes(s) ||
-        r.flight_no.toLowerCase().includes(s) ||
-        r.staff_names.toLowerCase().includes(s) ||
-        r.station.toLowerCase().includes(s)
+        (r.airline || "").toLowerCase().includes(s) ||
+        (r.flight_no || "").toLowerCase().includes(s) ||
+        (r.staff_names || "").toLowerCase().includes(s) ||
+        (r.station || "").toLowerCase().includes(s)
       );
     }
     return rows;
-  }, [dispatches, stationFilter, reviewFilter, serviceFilter, dateFrom, dateTo, search, isOperationsView, isStationView, stationTab]);
+  }, [mergedRows, stationFilter, reviewFilter, serviceFilter, dateFrom, dateTo, search, isOperationsView, isStationView, stationTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  // KPIs
-  const totalReports = filtered.length;
-  const completedReports = filtered.filter(r => r.status === "Completed").length;
-  const approvedReports = filtered.filter(r => r.review_status === "Approved" || r.review_status === "Ready for Billing").length;
-  const totalRevenue = filtered.reduce((s, r) => s + r.total_charge, 0);
-  const totalOvertimeHrs = filtered.reduce((s, r) => s + r.overtime_hours, 0);
-  const totalStaffDeployed = filtered.reduce((s, r) => s + r.staff_count, 0);
-  const pendingReview = filtered.filter(r => r.review_status === "Pending Review").length;
-  const readyForBilling = filtered.filter(r => r.review_status === "Ready for Billing").length;
-
-  const linkedIrregularities = useMemo(() => {
-    const map = new Map<string, typeof irregularities[0]>();
-    irregularities.forEach(ir => map.set(ir.id, ir));
-    return map;
-  }, [irregularities]);
-
-  // Filter security flights
-  const filteredFlights = useMemo(() => {
-    let rows = securityFlights;
-    if (search) {
-      const s = search.toLowerCase();
-      rows = rows.filter((r: any) =>
-        r.flight_no?.toLowerCase().includes(s) ||
-        r.route?.toLowerCase().includes(s) ||
-        (r.airlines?.name || "").toLowerCase().includes(s)
-      );
-    }
-    if (dateFrom) rows = rows.filter((r: any) => (r.arrival_date || r.departure_date || "") >= dateFrom);
-    if (dateTo) rows = rows.filter((r: any) => (r.arrival_date || r.departure_date || "") <= dateTo);
-    return rows;
-  }, [securityFlights, search, dateFrom, dateTo]);
-
-  const flightsTotalPages = Math.max(1, Math.ceil(filteredFlights.length / PAGE_SIZE));
-  const flightsPageData = filteredFlights.slice((flightsPage - 1) * PAGE_SIZE, flightsPage * PAGE_SIZE);
 
   const saveEdit = () => {};
 
