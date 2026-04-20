@@ -47,30 +47,34 @@ function mergeFlightNumbers(a: string, b: string): string {
   return `${A}/${B}`;
 }
 
-// For Turnaround Security: pair each row with the next row (same date when possible),
-// merging flight#, route, taking next.sta as current.std, and removing the next row.
+// For Turnaround Security: if the current row is marked as turnaround,
+// pair it with the next row, merge flight#/route, take next.sta as current.std,
+// and remove the next row from import.
 function pairTurnaroundFlights(rows: ParsedRow[]): ParsedRow[] {
   const result: ParsedRow[] = [];
   const consumed = new Set<number>();
+
   for (let i = 0; i < rows.length; i++) {
     if (consumed.has(i)) continue;
+
     const cur = rows[i];
     if (cur.service_type !== "Turnaround Security") {
       result.push(cur);
       continue;
     }
-    // Find next unconsumed turnaround row (prefer same arrival date)
+
     let nextIdx = -1;
     for (let j = i + 1; j < rows.length; j++) {
       if (consumed.has(j)) continue;
-      if (rows[j].service_type !== "Turnaround Security") continue;
       nextIdx = j;
       if ((rows[j].arrival_date || "") === (cur.arrival_date || "")) break;
     }
+
     if (nextIdx === -1) {
       result.push(cur);
       continue;
     }
+
     const nxt = rows[nextIdx];
     consumed.add(nextIdx);
     result.push({
@@ -78,10 +82,11 @@ function pairTurnaroundFlights(rows: ParsedRow[]): ParsedRow[] {
       flight_number: mergeFlightNumbers(cur.flight_number, nxt.flight_number),
       route: mergeRoutes(cur.route, nxt.route),
       std: nxt.sta || cur.std,
-      departure_date: nxt.arrival_date || cur.departure_date,
-      departure_flight: nxt.flight_number || cur.departure_flight,
+      departure_date: nxt.departure_date || nxt.arrival_date || cur.departure_date,
+      departure_flight: nxt.flight_number || nxt.departure_flight || cur.departure_flight,
     });
   }
+
   return result;
 }
 
